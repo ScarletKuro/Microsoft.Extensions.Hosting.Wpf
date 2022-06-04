@@ -123,6 +123,10 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
                 //Initialize all internal app properties
                 app.InitializeComponent();
             }
+            else
+            {
+                throw new InvalidOperationException($"Please add IApplicationInitializeComponent interface to {typeof(TApplication).FullName}.");
+            }
             PreContextInitialization?.Invoke(WpfContext);
         }
 

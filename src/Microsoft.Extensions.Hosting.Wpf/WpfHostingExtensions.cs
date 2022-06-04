@@ -61,18 +61,41 @@ namespace Microsoft.Extensions.Hosting.Wpf
         }
 
         /// <summary>
-        /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{IServiceProvider}"/>
+        /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{TViewModelLocator}"/>
         /// </summary>
         /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+        /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="viewModelLocator">Instance of <see cref="TViewModelLocator"/></param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public static IHost UseWpfViewModelLocator<TApplication>(this IHost hostBuilder)
-            where TApplication : Application, IViewModelLocatorInitialization<IServiceProvider>, new()
+        public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost hostBuilder, TViewModelLocator viewModelLocator)
+            where TApplication : Application, IViewModelLocatorInitialization<TViewModelLocator>, new()
         {
             WpfThread<TApplication> wpfThread = hostBuilder.Services.GetRequiredService<WpfThread<TApplication>>();
             wpfThread.PreContextInitialization = context =>
             {
-                context.WpfApplication?.Initialize(hostBuilder.Services);
+                context.WpfApplication?.Initialize(viewModelLocator);
+            };
+
+            return hostBuilder;
+        }
+
+        /// <summary>
+        /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{TViewModelLocator}"/>
+        /// </summary>
+        /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+        /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="viewModelLocatorFunc">Function for creating <see cref="TViewModelLocator"/></param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost hostBuilder, Func<IServiceProvider, TViewModelLocator> viewModelLocatorFunc)
+            where TApplication : Application, IViewModelLocatorInitialization<TViewModelLocator>, new()
+        {
+            WpfThread<TApplication> wpfThread = hostBuilder.Services.GetRequiredService<WpfThread<TApplication>>();
+            wpfThread.PreContextInitialization = context =>
+            {
+                var viewModelLocator = viewModelLocatorFunc(hostBuilder.Services);
+                context.WpfApplication?.Initialize(viewModelLocator);
             };
 
             return hostBuilder;
