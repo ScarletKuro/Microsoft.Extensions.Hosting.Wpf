@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Threading;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Threading
 {
-    public static class WpfHostingExtensions
+    public static class ServiceCollectionExtensions
     {
         /// <summary>
         /// Adds Thread Switching functionality for WPF application.

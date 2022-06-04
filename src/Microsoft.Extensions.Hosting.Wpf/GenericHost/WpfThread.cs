@@ -63,6 +63,21 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
                 return;
             }
 
+            //We need this because otherwise if we have an active open window and call StopApplication, we will get an exception
+            if (WpfContext.WpfApplication != null)
+            {
+                foreach (var window in WpfContext.WpfApplication.Windows)
+                {
+                    if (window is not null)
+                    {
+                        if (window is Window wpfWindow)
+                        {
+                            wpfWindow.Close();
+                        }
+                    }
+                }
+            }
+
             var applicationLifeTime = ServiceProvider.GetService<IHostApplicationLifetime>();
             applicationLifeTime?.StopApplication();
         }
@@ -102,6 +117,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
 
             // Store the application for others to interact
             WpfContext.SetWpfApplication(application);
+            // ReSharper disable once SuspiciousTypeConversion.Global
             if (application is IApplicationInitializeComponent app)
             {
                 //Initialize all internal app properties

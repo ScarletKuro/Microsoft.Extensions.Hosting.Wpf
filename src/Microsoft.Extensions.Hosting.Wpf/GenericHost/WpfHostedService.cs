@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
                 if (_wpfContext.WpfApplication is not null)
                 {
                     //If true means that WPF is already shutdown internally. Usually happens when ShutdownMode is set to OnLastWindowClose or OnMainWindowClose
-                    //We need to check otherwise if we call Shutdown twice we might get exception
+                    //We need to check otherwise if we call Shutdown twice we get an exception
                     bool isShutdown = _wpfContext.WpfApplication.IsWpfShutdown();
                     if (!isShutdown)
                     {

@@ -4,7 +4,7 @@ using System.Windows;
 
 namespace Microsoft.Extensions.Hosting.Wpf
 {
-    public static class ApplicationExtensions
+    internal static class ApplicationExtensions
     {
         /// <summary>
         /// Checks if WPF application is already shutdown.

@@ -1,0 +1,101 @@
+﻿using System;
+using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting.Wpf.Bootstrap;
+using Microsoft.Extensions.Hosting.Wpf.GenericHost;
+using Microsoft.Extensions.Hosting.Wpf.Locator;
+
+namespace Microsoft.Extensions.Hosting.Wpf
+{
+    public static class WpfHostingExtensions
+    {
+        /// <summary>
+        /// Listens for Application.Current.Exit to start the shutdown process.
+        /// This will unblock extensions like RunAsync and WaitForShutdownAsync.
+        /// </summary>
+        /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureOptions">The delegate for configuring the <see cref="WpfLifetime{TApplication}"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder UseWpfLifetime<TApplication>(this IHostBuilder hostBuilder, Action<WpfLifeTimeOptions> configureOptions)
+            where TApplication : Application, new()
+        {
+            return hostBuilder.ConfigureServices((_, collection) =>
+            {
+                collection.AddSingleton<IHostLifetime, WpfLifetime<TApplication>>();
+                collection.Configure(configureOptions);
+            });
+        }
+
+        /// <summary>
+        /// Listens for Application.Current.Exit to start the shutdown process.
+        /// This will unblock extensions like RunAsync and WaitForShutdownAsync.
+        /// </summary>
+        /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder UseWpfLifetime<TApplication>(this IHostBuilder hostBuilder) where TApplication : Application, new() =>
+            hostBuilder.ConfigureServices((_, collection) => collection.AddSingleton<IHostLifetime, WpfLifetime<TApplication>>());
+
+
+        /// <summary>
+        /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{TViewModelLocator}"/>
+        /// </summary>
+        /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+        /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="container">Implementation of <see cref="IViewModelContainer"/></param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns
+        public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost hostBuilder, IViewModelContainer container)
+            where TApplication : Application, IViewModelLocatorInitialization<TViewModelLocator>, new()
+            where TViewModelLocator : class
+        {
+            WpfThread<TApplication> wpfThread = hostBuilder.Services.GetRequiredService<WpfThread<TApplication>>();
+            wpfThread.PreContextInitialization = context =>
+            {
+                TViewModelLocator viewModelLocator = container.GetService<TViewModelLocator>();
+                context.WpfApplication?.Initialize(viewModelLocator);
+            };
+
+            return hostBuilder;
+        }
+
+        /// <summary>
+        /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{IServiceProvider}"/>
+        /// </summary>
+        /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHost UseWpfViewModelLocator<TApplication>(this IHost hostBuilder)
+            where TApplication : Application, IViewModelLocatorInitialization<IServiceProvider>, new()
+        {
+            WpfThread<TApplication> wpfThread = hostBuilder.Services.GetRequiredService<WpfThread<TApplication>>();
+            wpfThread.PreContextInitialization = context =>
+            {
+                context.WpfApplication?.Initialize(hostBuilder.Services);
+            };
+
+            return hostBuilder;
+        }
+
+        /// <summary>
+        /// Bootstraps <see cref="IBootstrap{TContainer}"/> Dependency Injection container that is not Microsoft <see cref="IServiceCollection"/>.
+        /// </summary>
+        /// <typeparam name="TContainer">Container type.</typeparam>
+        /// <param name="host">The <see cref="IHost" /> to configure.</param>
+        /// <param name="container">The Dependency Injection container</param>
+        /// <returns>The same instance of the <see cref="IHost"/> for chaining.</returns>
+        public static IHost UseWpfContainerBootstrap<TContainer>(this IHost host, TContainer container)
+            where TContainer : class
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var bootstraps = host.Services.GetServices<IBootstrap<TContainer>>();
+            foreach (var bootstrap in bootstraps)
+            {
+                bootstrap.Boot(container, assemblies);
+            }
+
+            return host;
+        }
+    }
+}
