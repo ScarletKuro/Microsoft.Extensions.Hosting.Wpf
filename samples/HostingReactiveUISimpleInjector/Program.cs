@@ -1,12 +1,9 @@
-﻿using System.Diagnostics;
-using System.IO;
-using HostingReactiveUISimpleInjector.Bootstrap;
+﻿using HostingReactiveUISimpleInjector.Bootstrap;
 using HostingReactiveUISimpleInjector.Locator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting.Wpf;
-using NLog;
 using NLog.Extensions.Logging;
 using SimpleInjector;
 
@@ -14,21 +11,19 @@ namespace HostingReactiveUISimpleInjector
 {
     public class Program
     {
-        public static string RootPath => Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName) ?? string.Empty;
-        public static string NLogFilePath => Path.Combine(RootPath, "NLog.config");
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         public static void Main(string[] args)
         {
-            LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(NLogFilePath);
             using var container = RootBoot.CreateContainer();
+            //You can skip SimpleInjectorViewModelContainer, see comments in SimpleInjectorViewModelContainer class
             using var viewModelContainer = new SimpleInjectorViewModelContainer(container);
             using IHost host = CreateHostBuilder(container, args)
                 .Build()
                 .UseSimpleInjector(container)
                 .UseWpfContainerBootstrap(container)
+                //Or UseWpfViewModelLocator<App, ViewModelLocator>(new ViewModelLocator(container));
                 .UseWpfViewModelLocator<App, ViewModelLocator>(viewModelContainer);
             host.Run();
         }

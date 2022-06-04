@@ -1,10 +1,10 @@
 ﻿using System.Reactive;
 using System.Reactive.Disposables;
-using HostingReactiveUISimpleInjector.Service;
+using HostingReactiveUI.Service;
 using Microsoft.Extensions.Logging;
 using ReactiveUI;
 
-namespace HostingReactiveUISimpleInjector.ViewModel
+namespace HostingReactiveUI.ViewModels
 {
     public class MainViewModel : ReactiveObject, IActivatableViewModel
     {

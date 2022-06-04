@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.32002.261
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Wpf", "..\src\Microsoft.Extensions.Hosting.Wpf\Microsoft.Extensions.Hosting.Wpf.csproj", "{8614B90A-0063-4BDE-AB5D-5FA90C9B2648}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostingReactiveUISimpleInjector", "HostingReactiveUISimpleInjector\HostingReactiveUISimpleInjector.csproj", "{21B2140B-2169-4DD3-82CF-C27C1BC41D56}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostingReactiveUISimpleInjector", "HostingReactiveUISimpleInjector\HostingReactiveUISimpleInjector.csproj", "{21B2140B-2169-4DD3-82CF-C27C1BC41D56}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostingReactiveUI", "HostingReactiveUI\HostingReactiveUI.csproj", "{E7940BD7-C33E-4F9D-A94E-F6F5B7B179B3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{21B2140B-2169-4DD3-82CF-C27C1BC41D56}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21B2140B-2169-4DD3-82CF-C27C1BC41D56}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21B2140B-2169-4DD3-82CF-C27C1BC41D56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7940BD7-C33E-4F9D-A94E-F6F5B7B179B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7940BD7-C33E-4F9D-A94E-F6F5B7B179B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7940BD7-C33E-4F9D-A94E-F6F5B7B179B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7940BD7-C33E-4F9D-A94E-F6F5B7B179B3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
