@@ -14,6 +14,12 @@ namespace Microsoft.Extensions.Hosting.Wpf.Locator
         {
             var locatorName = FindNameFromApplication(applicationInstance) ?? DefaultLocatorName;
 
+            return GetInstance(applicationInstance, locatorName);
+        }
+
+        public static AbstractViewModelLocatorHost<TViewModelLocator>? GetInstance<TApplication>(TApplication applicationInstance, string locatorName)
+            where TApplication : Application
+        {
             return applicationInstance.Resources[locatorName] as AbstractViewModelLocatorHost<TViewModelLocator>;
         }
 
@@ -26,7 +32,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Locator
                 if (_viewModelLocator is null)
                 {
                     throw new InvalidOperationException("Please add IViewModelServiceProviderLocatorInitialization / IViewModelLocatorInitialization<DiContainer> to your App wpf class. \n" +
-                                                        "Then in Initialize(viewModelLocator) add `var viewModelLocatorHost = DefaultViewModelServiceProviderLocatorHost.GetInstance(this) / or LocatorHost that implement AbstractViewModelLocatorHost<DiContainer>`" +
+                                                        "Then in Initialize(viewModelLocator) add `var viewModelLocatorHost = ViewModelLocatorHost.GetInstance(this) [ViewModelLocatorHost should implement AbstractViewModelLocatorHost<DiContainer>]`" +
                                                         " and `viewModelLocatorHost?.SetViewModelLocator(viewModelLocator);`");
                 }
 
@@ -43,6 +49,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Locator
             where TApplication : Application
         {
             var collection = new List<ResourceDictionary> { applicationInstance.Resources };
+            //Look in merged dictionaries too just in case someone adds it there.
             collection.AddRange(applicationInstance.Resources.MergedDictionaries);
 
             return FindNameFromResource(collection);
