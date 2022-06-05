@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostingReactiveUISimpleInje
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostingReactiveUI", "HostingReactiveUI\HostingReactiveUI.csproj", "{E7940BD7-C33E-4F9D-A94E-F6F5B7B179B3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostingSimple", "HostingSimple\HostingSimple.csproj", "{2DFA5BE2-C4CC-44C2-B637-271A299CF348}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{E7940BD7-C33E-4F9D-A94E-F6F5B7B179B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E7940BD7-C33E-4F9D-A94E-F6F5B7B179B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E7940BD7-C33E-4F9D-A94E-F6F5B7B179B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DFA5BE2-C4CC-44C2-B637-271A299CF348}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DFA5BE2-C4CC-44C2-B637-271A299CF348}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DFA5BE2-C4CC-44C2-B637-271A299CF348}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DFA5BE2-C4CC-44C2-B637-271A299CF348}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,7 +2,8 @@
 
 namespace HostingReactiveUISimpleInjector.Locator
 {
-    public class ViewModelLocatorHost : AbstractViewModelLocatorHost<IViewModelLocator>
+    public class ViewModelLocatorHost
+        : AbstractViewModelLocatorHost<IViewModelLocator>
     {
     }
 }

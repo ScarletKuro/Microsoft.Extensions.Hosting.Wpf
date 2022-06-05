@@ -3,7 +3,8 @@ using SimpleInjector;
 
 namespace HostingReactiveUISimpleInjector.Locator
 {
-    public class ViewModelLocator : IViewModelLocator
+    public class ViewModelLocator
+        : IViewModelLocator
     {
         public Container Container { get; }
 

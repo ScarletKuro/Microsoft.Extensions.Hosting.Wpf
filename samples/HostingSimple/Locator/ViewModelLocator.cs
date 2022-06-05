@@ -1,8 +1,8 @@
 ﻿using System;
-using HostingReactiveUI.ViewModels;
+using HostingSimple.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HostingReactiveUI.Locator
+namespace HostingSimple.Locator
 {
     public class ViewModelLocator
         : IViewModelLocator

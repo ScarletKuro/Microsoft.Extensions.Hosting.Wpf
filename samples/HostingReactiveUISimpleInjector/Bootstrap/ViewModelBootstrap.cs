@@ -13,7 +13,10 @@ namespace HostingReactiveUISimpleInjector.Bootstrap
         {
             Contract.Assert(container is not null, nameof(container));
             var viewModelLocator = new ViewModelLocator(container);
-            //We register both implementation and interface, implementation for quirky cases and interface when we don't care about details
+            //If we implement IViewModelContainer and use it, in our case SimpleInjectorViewModelContainer we need to register ViewModelLocator
+            //We register both for example purpose.
+            //User can decide whatever he wants to use .UseWpfViewModelLocator<App, ViewModelLocator> / UseWpfViewModelLocator<App, IViewModelLocator> with IViewModelLocatorInitialization<ViewModelLocator> / IViewModelLocatorInitialization<IViewModelLocator>
+            //Since we use SimpleInjector Verify we actually need ViewModelLocator that exposes our Container details
             container.Register<IViewModelLocator>(() => viewModelLocator, Lifestyle.Singleton);
             container.Register<ViewModelLocator>(() => viewModelLocator, Lifestyle.Singleton);
 

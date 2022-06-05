@@ -38,7 +38,7 @@ namespace HostingReactiveUI
             //Set correct scheduler, even though it should be correct since we resolve in correct thread(line below), but just in case let it be reassign. 
             RxApp.MainThreadScheduler = new WaitForDispatcherScheduler(() => new DispatcherScheduler(Dispatcher));
 
-            //We need to set it so that our <locator:DefaultViewModelServiceProviderLocatorHost x:Key="Locator"/> could resolve ViewModels for DataContext
+            //We need to set it so that our <locator:ViewModelLocatorHost x:Key="Locator"/> could resolve ViewModels for DataContext
             //You can also use it as service locator pattern, but I personally recommend you to use it only inside View xaml to bind the DataContext
             var viewModelLocatorHost = ViewModelLocatorHost.GetInstance(this);
             viewModelLocatorHost?.SetViewModelLocator(viewModelLocator);
