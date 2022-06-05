@@ -5,8 +5,6 @@
 
 Unofficial implementation of Microsoft.Extensions.Hosting for WPF. It is inspired by [Dapplo](https://github.com/dapplo/Dapplo.Microsoft.Extensions.Hosting) and this extensions is focused only on WPF and doesn't have Plugins, SingleInstance etc features like Dapplo. It's main feature is to provide the ability to bind DataContext with ViewModels directly in XAML where the ViewModel gets resolved by DI. The second feature is the ability to use TrayIcon with this library because with Microsoft.Extensions.Hostin it's tricky.
 
-This is more or less how I see Microsoft would do it for WPF without changing the WPF codedbase.
-
 ## Samples
 1. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/master/samples/HostingSimple) - Minimal getting started project.
 2. [HostingReactiveUI](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/master/samples/HostingReactiveUI) - More advanced example with using NLog as logging, ReactiveUI as model-view-viewmodel framework, shows how to use the TrayIcon feature.
