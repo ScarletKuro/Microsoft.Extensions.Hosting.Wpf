@@ -7,6 +7,32 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+  
+  <PropertyGroup>
+	<IsPackable>true</IsPackable>
+	<IncludeSymbols>true</IncludeSymbols>
+	<Version>1.0.0</Version>
+	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	<Authors>ScarletKuro</Authors>
+	<Description>Unofficial implementation of Microsoft.Extensions.Hosting for WPF.</Description>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf</RepositoryUrl>
+	<PackageTags>Microsoft, Extensions, WPF, Hosting</PackageTags>
+	<PackageIcon>icon.png</PackageIcon>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<AssemblyName>Extensions.Hosting.Wpf</AssemblyName>
+  </PropertyGroup>
+  
+  <ItemGroup>
+	<None Include="..\..\icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+	</None>
+	<None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+	</None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
