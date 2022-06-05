@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Locator
             {
                 if (_viewModelLocator is null)
                 {
-                    throw new InvalidOperationException("Please add IViewModelServiceProviderLocatorInitialization / IViewModelLocatorInitialization<DiContainer> to your App wpf class. \n" +
+                    throw new InvalidOperationException("Please add IViewModelLocatorInitialization<DiContainer> to your App wpf class. \n" +
                                                         "Then in Initialize(viewModelLocator) add `var viewModelLocatorHost = ViewModelLocatorHost.GetInstance(this) [ViewModelLocatorHost should implement AbstractViewModelLocatorHost<DiContainer>]`" +
                                                         " and `viewModelLocatorHost?.SetViewModelLocator(viewModelLocator);`");
                 }

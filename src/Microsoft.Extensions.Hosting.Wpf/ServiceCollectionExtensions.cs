@@ -72,5 +72,20 @@ namespace Microsoft.Extensions.Hosting.Wpf
 
             return AddWpf<TApplication>(services);
         }
+
+        /// <summary>
+        /// Adds WPF functionality for GenericHost with existing <see cref="Application" />.
+        /// </summary>
+        /// <param name="createApplication">The function used to create <see cref="Application" /></param>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+        /// <typeparam name="TApplication">WPF <see cref="Application" /></typeparam>
+        /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
+        public static IServiceCollection AddWpf<TApplication>(this IServiceCollection services, TApplication createApplication)
+            where TApplication : Application, new()
+        {
+            services.AddSingleton<Func<IServiceProvider, TApplication>>(_ => createApplication);
+
+            return AddWpf<TApplication>(services);
+        }
     }
 }
