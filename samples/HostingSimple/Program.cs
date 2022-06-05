@@ -1,13 +1,11 @@
-﻿using HostingReactiveUI.Locator;
-using HostingReactiveUI.Service;
-using HostingReactiveUI.ViewModels;
+﻿using HostingSimple.Locator;
+using HostingSimple.Service;
+using HostingSimple.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Wpf;
-using Microsoft.Extensions.Logging;
-using NLog.Extensions.Logging;
 
-namespace HostingReactiveUI
+namespace HostingSimple
 {
     public class Program
     {
@@ -30,23 +28,8 @@ namespace HostingReactiveUI
 
         private static void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services)
         {
-            services.AddLogging(loggingBuilder =>
-            {
-                //We need to disable Microsoft LoggerFactory so that our LogLevel works correctly from NLog.config
-                loggingBuilder.AddNLog(new NLogProviderOptions
-                {
-                    ReplaceLoggerFactory = true,
-                    RemoveLoggerFactoryFilter = true,
-                    ShutdownOnDispose = true
-                });
-            });
-            services.AddWpf(serviceProvider =>
-            {
-                var logger = serviceProvider.GetRequiredService<ILogger<App>>();
-
-                return new App(logger);
-            });
-            services.AddWpfTrayIcon<TrayIcon, App>(wpfThread => new TrayIcon(wpfThread));
+            services.AddLogging();
+            services.AddWpf<App>();
 
             //Add our view models
             services.AddTransient<MainViewModel>();
