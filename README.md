@@ -8,9 +8,9 @@ Unofficial implementation of Microsoft.Extensions.Hosting for WPF. It is inspire
 ### [Changelog](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/CHANGELOG.md)
 
 ## Samples
-1. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/master/samples/HostingSimple) - Minimal getting started project.
-2. [HostingReactiveUI](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/master/samples/HostingReactiveUI) - More advanced example with using NLog as logging, ReactiveUI as model-view-viewmodel framework, shows how to use the TrayIcon feature.
-3. [HostingReactiveUISimpleInjector](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/master/samples/HostingReactiveUISimpleInjector) - Same as HostingReactiveUI but it also using SimpleInjector. This library doesn't limits your to stick only with `Microsoft.DependencyInjection`. Also shows some more abstractions and internal helpers to handle another DI inside.
+1. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingSimple) - Minimal getting started project.
+2. [HostingReactiveUI](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUI) - More advanced example with using NLog as logging, ReactiveUI as model-view-viewmodel framework, shows how to use the TrayIcon feature.
+3. [HostingReactiveUISimpleInjector](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjector) - Same as HostingReactiveUI but it also using SimpleInjector. This library doesn't limits your to stick only with `Microsoft.DependencyInjection`. Also shows some more abstractions and internal helpers to handle another DI inside.
 
 ## Getting Started
 This steps including the Locator feature for Views. If you don't want it then just skip to 6 and 7 step.
