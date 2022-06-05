@@ -1,5 +1,15 @@
-# Coming soon...
+# Microsoft.Extensions.Hosting.Wpf
+Unofficial implementation of Microsoft.Extensions.Hosting for WPF. It is inspired by [Dapplo](https://github.com/dapplo/Dapplo.Microsoft.Extensions.Hosting) and this extensions is focused only on WPF and doesn't have Plugins, SingleInstance etc features like Dapplo. It's main feature is to provide the ability to bind DataContext with ViewModels directly in XAML where the ViewModel gets resolved by DI. The second feature is the ability to use TrayIcon with this library because with Microsoft.Extensions.Hostin it's tricky.
 
+This is more or less how I see Microsoft would do it for WPF without changing the WPF codedbase.
+
+## Samples
+1. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/master/samples/HostingSimple) - Minimal getting started project.
+2. [HostingReactiveUI](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/master/samples/HostingReactiveUI) - More advanced example with using NLog as logging, ReactiveUI as model-view-viewmodel framework, shows how to use the TrayIcon feature.
+3. [HostingReactiveUISimpleInjector](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/master/samples/HostingReactiveUISimpleInjector) - Same as HostingReactiveUI but it also using SimpleInjector. This library doesn't limits your to stick only with `Microsoft.DependencyInjection`. Also shows some more abstractions and internal helpers to handle another DI inside.
+
+## Getting Started
+This steps including the Locator feature for Views. If you don't want it then just skip to 6 and 7 step.
 ### 1. First step, make `IViewModelLocator` that will contain your ViewModels. Example:
 ```CSharp
 public interface IViewModelLocator
@@ -96,7 +106,11 @@ services.AddWpf(serviceProvider =>
 	return new App(logger);
 });
 ```
-7. We need to add `StartupObject` in our `.csproj`
+### 7. We need to add `StartupObject` in our `.csproj`
 ```Xml
 <StartupObject>[Namespace].Program</StartupObject>
+```
+### 8. Now in your View you can bind the DataContext like this
+```Xml
+DataContext="{Binding ViewModelLocator.Main, Mode=OneTime, Source={StaticResource Locator}}"
 ```
