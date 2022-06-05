@@ -5,6 +5,21 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+  
+  <PropertyGroup>
+	<IsPackable>true</IsPackable>
+	<IncludeSymbols>true</IncludeSymbols>
+	<Version>1.0.0</Version>
+	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	<Authors>ScarletKuro</Authors>
+	<Description>Adds Microsoft.VisualStudio.Threading support for Extensions.Hosting.Wpf</Description>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf</RepositoryUrl>
+	<PackageTags>Microsoft, Extensions, WPF, Hosting, Threading</PackageTags>
+	<PackageIcon>icon.png</PackageIcon>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<AssemblyName>Extensions.Hosting.Wpf.Threading</AssemblyName>
+  </PropertyGroup>
 
   <ItemGroup>
 	<PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.1.46" />
