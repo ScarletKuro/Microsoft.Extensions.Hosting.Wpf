@@ -9,10 +9,10 @@ namespace Microsoft.Extensions.Hosting.Wpf.Locator
     {
         private const string DefaultLocatorName = "Locator";
 
-        public static AbstractViewModelLocatorHost<TViewModelLocator>? GetInstance<TApplication>(TApplication applicationInstance)
+        public static AbstractViewModelLocatorHost<TViewModelLocator>? GetInstance<TApplication>(TApplication applicationInstance, bool skipMergedDictionaries = false)
             where TApplication : Application
         {
-            var locatorName = FindNameFromApplication(applicationInstance) ?? DefaultLocatorName;
+            var locatorName = FindNameFromApplication(applicationInstance, skipMergedDictionaries) ?? DefaultLocatorName;
 
             return GetInstance(applicationInstance, locatorName);
         }
@@ -45,19 +45,22 @@ namespace Microsoft.Extensions.Hosting.Wpf.Locator
             _viewModelLocator = viewModelLocator;
         }
 
-        private static string? FindNameFromApplication<TApplication>(TApplication applicationInstance)
+        private static string? FindNameFromApplication<TApplication>(TApplication applicationInstance, bool skipMergedDictionaries = false)
             where TApplication : Application
         {
             var collection = new List<ResourceDictionary> { applicationInstance.Resources };
             //Look in merged dictionaries too just in case someone adds it there.
-            collection.AddRange(applicationInstance.Resources.MergedDictionaries);
+            if (!skipMergedDictionaries)
+            {
+                collection.AddRange(applicationInstance.Resources.MergedDictionaries);
+            }
 
             return FindNameFromResource(collection);
         }
 
         private static string? FindNameFromResource(IEnumerable<ResourceDictionary> dictionaries)
         {
-            foreach (var dictionary in dictionaries)
+            foreach (ResourceDictionary dictionary in dictionaries)
             {
                 foreach (var key in dictionary.Keys)
                 {
