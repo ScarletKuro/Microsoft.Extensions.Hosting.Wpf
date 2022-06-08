@@ -119,6 +119,19 @@ services.AddWpf(serviceProvider =>
 DataContext="{Binding ViewModelLocator.Main, Mode=OneTime, Source={StaticResource Locator}}"
 ```
 
+## WPF Lifetime
+If you want you can use `UseWpfLifetime` but it's pretty much experimental, the current solution is well adopted to use the default lifetime and was battle tested without `UseWpfLifetime`.
+### Usage
+```CSharp
+private static IHostBuilder CreateHostBuilder(string[] args)
+{
+	return Host.CreateDefaultBuilder(args)
+		.UseWpfLifetime<App>() //<-- new line
+		.ConfigureServices(ConfigureServices);
+}
+```
+
+
 ## Other features
 1. [Microsoft.Extensions.Hosting.Wpf.Threading](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/docs/Threading.md)
 2. [Microsoft.Extensions.Hosting.Wpf.Bootstrap](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/docs/Bootstrap.md)
