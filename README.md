@@ -69,7 +69,7 @@ public partial class App : Application, IViewModelLocatorInitialization<ViewMode
     }
 }
 ```
-**NB!** `ViewModelLocatorHost.GetInstance(this)` will automatically find the locator even if you rename it, but for better perfomance, startup time, memory usage(it will iterate through Application Dictionary) my personal recommendation is to use `ViewModelLocatorHost.GetInstance(this, "Locator")`.
+**NB!** `ViewModelLocatorHost.GetInstance(this)` will automatically find the locator even if you rename it(x:Key), but for better perfomance, startup time, memory usage(it will iterate through Application Dictionary) my personal recommendation is to use `ViewModelLocatorHost.GetInstance(this, "Locator")` instead.
 ### 6. Add Program.cs. Basic example
 ```CSharp
 public class Program
