@@ -12,17 +12,17 @@
 	<Version>2.0.0</Version>
 	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	<Authors>ScarletKuro</Authors>
-	<Description>Adds Microsoft.VisualStudio.Threading support for Extensions.Hosting.Wpf</Description>
-	<PackageReadmeFile>Threading.md</PackageReadmeFile>
+	<Description>A small helper to bootstrap 3rd party DI containers for Extensions.Hosting.Wpf</Description>
+	<PackageReadmeFile>Bootstrap.md</PackageReadmeFile>
 	<RepositoryUrl>https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf</RepositoryUrl>
-	<PackageTags>Microsoft, Extensions, WPF, Hosting, Threading</PackageTags>
+	<PackageTags>Microsoft, Extensions, WPF, Hosting, Bootstrap</PackageTags>
 	<PackageIcon>icon.png</PackageIcon>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
-	<AssemblyName>Extensions.Hosting.Wpf.Threading</AssemblyName>
+	<AssemblyName>Extensions.Hosting.Wpf.Bootstrap</AssemblyName>
   </PropertyGroup>
   
   <ItemGroup>
-    <None Include="..\..\docs\Threading.md">
+    <None Include="..\..\docs\Bootstrap.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
@@ -32,10 +32,6 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-	<PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.1.46" />
-	<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.1.46" PrivateAssets="none" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Extensions.Hosting.Wpf\Microsoft.Extensions.Hosting.Wpf.csproj" />

@@ -11,7 +11,7 @@
   <PropertyGroup>
 	<IsPackable>true</IsPackable>
 	<IncludeSymbols>true</IncludeSymbols>
-	<Version>1.0.0</Version>
+	<Version>2.0.0</Version>
 	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	<Authors>ScarletKuro</Authors>
 	<Description>Unofficial implementation of Microsoft.Extensions.Hosting for WPF.</Description>
