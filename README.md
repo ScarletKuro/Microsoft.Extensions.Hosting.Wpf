@@ -118,3 +118,7 @@ services.AddWpf(serviceProvider =>
 ```Xml
 DataContext="{Binding ViewModelLocator.Main, Mode=OneTime, Source={StaticResource Locator}}"
 ```
+
+## Other features
+1. [Microsoft.Extensions.Hosting.Wpf.Threading](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/docs/Threading.md)
+2. [Microsoft.Extensions.Hosting.Wpf.Bootstrap](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/docs/Bootstrap.md)
