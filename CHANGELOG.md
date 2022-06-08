@@ -6,11 +6,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.0.0] - 2022-06-05
+
+### Removed
+- Remove Boostrap from `Microsoft.Extensions.Hosting.Wpf`.
+#### Added
+- Add `Microsoft.Extensions.Hosting.Wpf.Bootstrap` library.
+### Changed
+- Update `Microsoft.VisualStudio.Threading` to 17.2.32 in `Microsoft.Extensions.Hosting.Threading`.
+- Add `skipMergedDictionaries` parameter in `AbstractViewModelLocatorHost.GetInstance`.
+
 ## [1.0.0] - 2022-06-05
 #### Added
 - First release.
 
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..1.0.0
-
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..2.0.0
+[2.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/1.0.0..2.0.0
 [1.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/commits/1.0.0
