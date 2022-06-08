@@ -13,7 +13,7 @@ This can be really useful when using WPF inside `Microsoft.Extensions.Hosting` s
 private static void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services)
 {
     services.AddWpf<App>();
-    services.AddThreadSwitching(); //<--- new line
+    services.AddThreadSwitching<App>(); //<--- new line
 }
 ```
 
