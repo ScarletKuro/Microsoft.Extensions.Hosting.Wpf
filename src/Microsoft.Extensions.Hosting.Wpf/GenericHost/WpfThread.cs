@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         public SynchronizationContext SynchronizationContext => _synchronizationContext ?? throw new InvalidOperationException("WPF Thread was not started.");
 
         /// <summary>
-        /// The IServiceProvider used by all IUiContext implementations
+        /// The IServiceProvider
         /// </summary>
         public IServiceProvider ServiceProvider { get; }
 
