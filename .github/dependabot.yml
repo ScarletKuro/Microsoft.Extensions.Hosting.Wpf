@@ -1,7 +1,8 @@
 version: 2
 updates:
   - package-ecosystem: "nuget"
-    directory: "/src/"
+    directory: "/src/Microsoft.Extensions.Hosting.Wpf.Threading"
+    open-pull-requests-limit: 5
     target-branch: "dev"
     schedule:
       interval: "weekly"
