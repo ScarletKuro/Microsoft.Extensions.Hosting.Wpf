@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Hosting.Wpf
         /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
         public static IServiceCollection AddWpfTrayIcon<TTrayIcon, TApplication>(this IServiceCollection services, Func<WpfThread<TApplication>, TTrayIcon> createTray)
             where TTrayIcon : class, ITrayIcon<TApplication>
-            where TApplication : Application, new()
+            where TApplication : Application, IApplicationInitializeComponent, new()
         {
             services.AddSingleton<Func<WpfThread<TApplication>, ITrayIcon<TApplication>>>(createTray);
 
@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Hosting.Wpf
         /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
         /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
         public static IServiceCollection AddWpf<TApplication>(this IServiceCollection services)
-            where TApplication : Application, new()
+            where TApplication : Application, IApplicationInitializeComponent, new()
         {
             services.AddSingleton(new WpfContext<TApplication>());
             services.AddSingleton<WpfThread<TApplication>>();
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Hosting.Wpf
         /// <typeparam name="TApplication">WPF <see cref="Application" /></typeparam>
         /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
         public static IServiceCollection AddWpf<TApplication>(this IServiceCollection services, Func<IServiceProvider, TApplication> createApplication)
-            where TApplication : Application, new()
+            where TApplication : Application, IApplicationInitializeComponent, new()
         {
             services.AddSingleton<Func<IServiceProvider, TApplication>>(createApplication);
 
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Hosting.Wpf
         /// <typeparam name="TApplication">WPF <see cref="Application" /></typeparam>
         /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
         public static IServiceCollection AddWpf<TApplication>(this IServiceCollection services, TApplication createApplication)
-            where TApplication : Application, new()
+            where TApplication : Application, IApplicationInitializeComponent, new()
         {
             services.AddSingleton<Func<IServiceProvider, TApplication>>(_ => createApplication);
 

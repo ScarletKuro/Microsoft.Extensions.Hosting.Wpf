@@ -8,8 +8,10 @@ using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
 {
     public class WpfThread<TApplication>
-        where TApplication : Application, new()
+        where TApplication : Application, IApplicationInitializeComponent, new()
     {
+        private SynchronizationContext? _synchronizationContext;
+
         /// <summary>
         /// Pre initialization that happens before <see cref="Application.Run()"/>. This action happens on UI thread.
         /// </summary>
@@ -19,7 +21,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
 
         public Thread MainThread { get; }
 
-        public SynchronizationContext? SynchronizationContext { get; private set; }
+        public SynchronizationContext SynchronizationContext => _synchronizationContext ?? throw new InvalidOperationException("WPF Thread was not started.");
 
         /// <summary>
         /// The IServiceProvider used by all IUiContext implementations
@@ -64,7 +66,16 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
             }
 
             //We need this because otherwise if we have an active open window and call StopApplication, we will get an exception
-            if (WpfContext.WpfApplication != null)
+            //This might happens if HandleApplicationExit was called manually, for example via tray
+            CloseAllWindowsIfAny();
+
+            var applicationLifeTime = ServiceProvider.GetService<IHostApplicationLifetime>();
+            applicationLifeTime?.StopApplication();
+        }
+
+        private void CloseAllWindowsIfAny()
+        {
+            if (WpfContext.WpfApplication is not null)
             {
                 foreach (var window in WpfContext.WpfApplication.Windows)
                 {
@@ -77,9 +88,6 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
                     }
                 }
             }
-
-            var applicationLifeTime = ServiceProvider.GetService<IHostApplicationLifetime>();
-            applicationLifeTime?.StopApplication();
         }
 
         /// <summary>
@@ -101,15 +109,16 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
             // Create our SynchronizationContext, and install it:
             var synchronizationContext = new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher);
             SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
-            SynchronizationContext = synchronizationContext;
+            _synchronizationContext = synchronizationContext;
             
             var application = CreateApplication();
 
+            //We must set this if default / third party lifetime is used.
             //Only observe event if we don't have WpfLifetime linked that already listens and calls StopApplication on demand
             if (!WpfContext.IsLifetimeLinked)
             {
                 // Register to the WPF application exit to stop the host application
-                application.Exit += (s, e) =>
+                application.Exit += (_, _) =>
                 {
                     HandleApplicationExit();
                 };
@@ -117,16 +126,8 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
 
             // Store the application for others to interact
             WpfContext.SetWpfApplication(application);
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            if (application is IApplicationInitializeComponent app)
-            {
-                //Initialize all internal app properties
-                app.InitializeComponent();
-            }
-            else
-            {
-                throw new InvalidOperationException($"Please add IApplicationInitializeComponent interface to {typeof(TApplication).FullName}.");
-            }
+            //Initialize all internal app properties
+            application.InitializeComponent();
             PreContextInitialization?.Invoke(WpfContext);
         }
 

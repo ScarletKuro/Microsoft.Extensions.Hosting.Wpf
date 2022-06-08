@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Threading
         /// <typeparam name="TApplication">WPF <see cref="Application" /></typeparam>
         /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
         public static IServiceCollection AddThreadSwitching<TApplication>(this IServiceCollection services)
-            where TApplication : Application, new()
+            where TApplication : Application, IApplicationInitializeComponent, new()
         {
             services.AddSingleton<JoinableTaskContext>(provider =>
             {

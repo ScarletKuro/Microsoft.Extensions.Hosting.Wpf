@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Hosting.Wpf
         /// <param name="container">Implementation of <see cref="IViewModelContainer"/></param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns
         public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost hostBuilder, IViewModelContainer container)
-            where TApplication : Application, IViewModelLocatorInitialization<TViewModelLocator>, new()
+            where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>, new()
             where TViewModelLocator : class
         {
             WpfThread<TApplication> wpfThread = hostBuilder.Services.GetRequiredService<WpfThread<TApplication>>();
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Hosting.Wpf
         /// <param name="viewModelLocator">Instance of <see cref="TViewModelLocator"/></param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost hostBuilder, TViewModelLocator viewModelLocator)
-            where TApplication : Application, IViewModelLocatorInitialization<TViewModelLocator>, new()
+            where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>, new()
         {
             WpfThread<TApplication> wpfThread = hostBuilder.Services.GetRequiredService<WpfThread<TApplication>>();
             wpfThread.PreContextInitialization = context =>
@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Hosting.Wpf
         /// <param name="viewModelLocatorFunc">Function for creating <see cref="TViewModelLocator"/></param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost hostBuilder, Func<IServiceProvider, TViewModelLocator> viewModelLocatorFunc)
-            where TApplication : Application, IViewModelLocatorInitialization<TViewModelLocator>, new()
+            where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>, new()
         {
             WpfThread<TApplication> wpfThread = hostBuilder.Services.GetRequiredService<WpfThread<TApplication>>();
             wpfThread.PreContextInitialization = context =>

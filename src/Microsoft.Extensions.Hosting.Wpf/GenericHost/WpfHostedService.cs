@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
 {
-    public class WpfHostedService<TApplication> : IHostedService where TApplication : Application, new()
+    public class WpfHostedService<TApplication>
+        : IHostedService where TApplication : Application, IApplicationInitializeComponent, new()
     {
         private readonly ILogger<WpfHostedService<TApplication>> _logger;
         private readonly WpfThread<TApplication> _wpfThread;
