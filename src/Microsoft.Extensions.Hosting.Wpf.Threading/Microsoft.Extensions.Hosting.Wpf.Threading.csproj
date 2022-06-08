@@ -33,8 +33,8 @@
   </ItemGroup>
 
   <ItemGroup>
-	<PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.1.46" />
-	<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.1.46" PrivateAssets="none" />
+	<PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.2.32" />
+	<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.2.32" PrivateAssets="none" />
   </ItemGroup>
 
   <ItemGroup>
