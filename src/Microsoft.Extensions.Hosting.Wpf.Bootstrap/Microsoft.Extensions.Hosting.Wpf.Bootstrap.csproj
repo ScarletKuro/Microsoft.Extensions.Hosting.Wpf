@@ -1,24 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<TargetFrameworks>netcoreapp3.1;net6.0-windows</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net6.0-windows</TargetFrameworks>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   
   <PropertyGroup>
-	<IsPackable>true</IsPackable>
-	<IncludeSymbols>true</IncludeSymbols>
-	<Version>2.0.0</Version>
-	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	<Authors>ScarletKuro</Authors>
-	<Description>A small helper to bootstrap 3rd party DI containers for Extensions.Hosting.Wpf</Description>
-	<PackageReadmeFile>Bootstrap.md</PackageReadmeFile>
-	<RepositoryUrl>https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf</RepositoryUrl>
-	<PackageTags>Microsoft, Extensions, WPF, Hosting, Bootstrap</PackageTags>
-	<PackageIcon>icon.png</PackageIcon>
-	<PackageLicenseExpression>MIT</PackageLicenseExpression>
-	<AssemblyName>Extensions.Hosting.Wpf.Bootstrap</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <IncludeSymbols>true</IncludeSymbols>
+    <Version>2.0.0</Version>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Authors>ScarletKuro</Authors>
+    <Description>A small helper to bootstrap 3rd party DI containers for Extensions.Hosting.Wpf</Description>
+    <PackageReadmeFile>Bootstrap.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf</RepositoryUrl>
+    <PackageTags>Microsoft, Extensions, WPF, Hosting, Bootstrap</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <AssemblyName>Extensions.Hosting.Wpf.Bootstrap</AssemblyName>
   </PropertyGroup>
   
   <ItemGroup>
