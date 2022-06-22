@@ -11,12 +11,8 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         where TApplication : Application, IApplicationInitializeComponent, new()
     {
         private readonly IServiceProvider _serviceProvider;
+        private Action<WpfContext<TApplication>>? _preContextInitialization;
         private SynchronizationContext? _synchronizationContext;
-
-        /// <summary>
-        /// Pre initialization that happens before <see cref="Application.Run()"/>. This action happens on UI thread.
-        /// </summary>
-        public Action<WpfContext<TApplication>>? PreContextInitialization { get; set; }
 
         public WpfContext<TApplication> WpfContext { get; }
 
@@ -107,7 +103,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
             WpfContext.SetWpfApplication(application);
             //Initialize all internal app properties
             application.InitializeComponent();
-            PreContextInitialization?.Invoke(WpfContext);
+            _preContextInitialization?.Invoke(WpfContext);
         }
 
         /// <summary>
@@ -118,6 +114,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
             // Mark the application as running
             WpfContext.IsRunning = true;
             //Since tray icon should be created in the STA thread we have to use lambda
+            //TODO: make a better abstraction to make possible to move TrayIcon to separate library.
             var trayIconFunction = _serviceProvider.GetService<Func<WpfThread<TApplication>, ITrayIcon<TApplication>>>();
             if (trayIconFunction is not null)
             {
@@ -141,6 +138,14 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
             }
 
             return new TApplication();
+        }
+
+        /// <summary>
+        /// Pre initialization that happens before <see cref="Application.Run()"/>. This action happens on UI thread.
+        /// </summary>
+        internal void SetPreContextInitialization(Action<WpfContext<TApplication>> preContextInitialization)
+        {
+            _preContextInitialization = preContextInitialization;
         }
     }
 }
