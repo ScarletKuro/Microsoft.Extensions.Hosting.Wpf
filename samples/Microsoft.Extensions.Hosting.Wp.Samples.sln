@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostingSimple", "HostingSim
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Wpf.Bootstrap", "..\src\Microsoft.Extensions.Hosting.Wpf.Bootstrap\Microsoft.Extensions.Hosting.Wpf.Bootstrap.csproj", "{80ED9AC7-8DA6-4946-9B43-A6170CF78D12}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostingReactiveUISimpleInjectorFlowingScope", "HostingReactiveUISimpleInjectorFlowingScope\HostingReactiveUISimpleInjectorFlowingScope.csproj", "{82C76949-7628-4F3A-BC77-7C93A1E4C842}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Wpf.Threading", "..\src\Microsoft.Extensions.Hosting.Wpf.Threading\Microsoft.Extensions.Hosting.Wpf.Threading.csproj", "{5F2FEC97-BF98-4CB7-B677-561318C76A19}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +43,14 @@ Global
 		{80ED9AC7-8DA6-4946-9B43-A6170CF78D12}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{80ED9AC7-8DA6-4946-9B43-A6170CF78D12}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{80ED9AC7-8DA6-4946-9B43-A6170CF78D12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82C76949-7628-4F3A-BC77-7C93A1E4C842}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82C76949-7628-4F3A-BC77-7C93A1E4C842}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82C76949-7628-4F3A-BC77-7C93A1E4C842}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82C76949-7628-4F3A-BC77-7C93A1E4C842}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F2FEC97-BF98-4CB7-B677-561318C76A19}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F2FEC97-BF98-4CB7-B677-561318C76A19}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F2FEC97-BF98-4CB7-B677-561318C76A19}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F2FEC97-BF98-4CB7-B677-561318C76A19}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

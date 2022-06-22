@@ -1,0 +1,13 @@
+﻿<Application x:Class="HostingReactiveUISimpleInjectorFlowingScope.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locator="clr-namespace:HostingReactiveUISimpleInjectorFlowingScope.Locator"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--Resources that you need, for example MahApps-->
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
