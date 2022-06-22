@@ -10,6 +10,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
     public class WpfThread<TApplication>
         where TApplication : Application, IApplicationInitializeComponent, new()
     {
+        private readonly IServiceProvider _serviceProvider;
         private SynchronizationContext? _synchronizationContext;
 
         /// <summary>
@@ -24,18 +25,13 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         public SynchronizationContext SynchronizationContext => _synchronizationContext ?? throw new InvalidOperationException("WPF Thread was not started.");
 
         /// <summary>
-        /// The IServiceProvider
-        /// </summary>
-        public IServiceProvider ServiceProvider { get; }
-
-        /// <summary>
-        /// Constructor which is called from the IWinFormsContext
+        /// Constructor
         /// </summary>
         /// <param name="serviceProvider">IServiceProvider</param>
         /// <param name="wpfContext">WpfContext</param>
         public WpfThread(IServiceProvider serviceProvider, WpfContext<TApplication> wpfContext)
         {
-            ServiceProvider = serviceProvider;
+            _serviceProvider = serviceProvider;
             WpfContext = wpfContext;
             //Create a thread which runs the UI
             MainThread = new Thread(InternalUiThreadStart)
@@ -67,27 +63,10 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
 
             //We need this because otherwise if we have an active open window and call StopApplication, we will get an exception
             //This might happens if HandleApplicationExit was called manually, for example via tray
-            CloseAllWindowsIfAny();
+            WpfContext.WpfApplication.CloseAllWindowsIfAny();
 
-            var applicationLifeTime = ServiceProvider.GetService<IHostApplicationLifetime>();
+            var applicationLifeTime = _serviceProvider.GetService<IHostApplicationLifetime>();
             applicationLifeTime?.StopApplication();
-        }
-
-        private void CloseAllWindowsIfAny()
-        {
-            if (WpfContext.WpfApplication is not null)
-            {
-                foreach (var window in WpfContext.WpfApplication.Windows)
-                {
-                    if (window is not null)
-                    {
-                        if (window is Window wpfWindow)
-                        {
-                            wpfWindow.Close();
-                        }
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -139,7 +118,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
             // Mark the application as running
             WpfContext.IsRunning = true;
             //Since tray icon should be created in the STA thread we have to use lambda
-            var trayIconFunction = ServiceProvider.GetService<Func<WpfThread<TApplication>, ITrayIcon<TApplication>>>();
+            var trayIconFunction = _serviceProvider.GetService<Func<WpfThread<TApplication>, ITrayIcon<TApplication>>>();
             if (trayIconFunction is not null)
             {
                 // Create icon if we used <see cref="WpfHostingExtensions.AddWpfTrayIcon{TTrayIcon, TApplication}"/>
@@ -155,10 +134,10 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
 
         private TApplication CreateApplication()
         {
-            var applicationFunction = ServiceProvider.GetService<Func<IServiceProvider, TApplication>>();
+            var applicationFunction = _serviceProvider.GetService<Func<IServiceProvider, TApplication>>();
             if (applicationFunction is not null)
             {
-                return applicationFunction(ServiceProvider);
+                return applicationFunction(_serviceProvider);
             }
 
             return new TApplication();

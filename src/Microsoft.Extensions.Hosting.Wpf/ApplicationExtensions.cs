@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Hosting.Wpf
         /// </summary>
         /// <param name="instance">Instance of WPF <see cref="Application"/></param>
         /// <returns>When WPF application is shutdown return <c>true</c></returns>
-        internal static bool IsWpfShutdown<TApplication>(this TApplication instance) 
+        internal static bool IsWpfShutdown<TApplication>(this TApplication instance)
             where TApplication : Application, new()
         {
             BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
@@ -30,6 +30,23 @@ namespace Microsoft.Extensions.Hosting.Wpf
             else
             {
                 action();
+            }
+        }
+
+        internal static void CloseAllWindowsIfAny<TApplication>(this TApplication? application)
+            where TApplication : Application, new()
+        {
+            if (application is null)
+            {
+                return;
+            }
+
+            foreach (var window in application.Windows)
+            {
+                if (window is Window wpfWindow)
+                {
+                    wpfWindow.Close();
+                }
             }
         }
     }
