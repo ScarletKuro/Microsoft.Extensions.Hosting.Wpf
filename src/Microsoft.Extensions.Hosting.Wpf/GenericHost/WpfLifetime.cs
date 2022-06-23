@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -15,7 +16,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         private CancellationTokenRegistration _applicationStoppingRegistration;
         private CancellationTokenRegistration _applicationStoppedRegistration;
 
-        private WpfContext<TApplication> WpfContext { get; }
+        private IWpfContext<TApplication> WpfContext { get; }
 
         private WpfLifeTimeOptions Options { get; }
 
@@ -28,7 +29,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         private ILogger Logger { get; }
 
         public WpfLifetime(
-            WpfContext<TApplication> wpfContext,
+            IWpfContext<TApplication> wpfContext,
             IOptions<WpfLifeTimeOptions> options,
             IHostEnvironment environment,
             IHostApplicationLifetime applicationLifetime,
@@ -38,7 +39,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         }
 
         public WpfLifetime(
-            WpfContext<TApplication> wpfContext,
+            IWpfContext<TApplication> wpfContext,
             IOptions<WpfLifeTimeOptions> options,
             IHostEnvironment environment,
             IHostApplicationLifetime applicationLifetime,

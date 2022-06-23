@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Windows;
+using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
 namespace Microsoft.Extensions.Hosting.Wpf.TrayIcon
 {
-    public interface ITrayIcon<TApplication>
+    public interface ITrayIcon<out TApplication>
         : IDisposable where TApplication : Application, IApplicationInitializeComponent, new()
     {
-        WpfThread<TApplication> WpfThread { get; }
+        IWpfThread<TApplication> WpfThread { get; }
 
         void CreateNotifyIcon();
     }

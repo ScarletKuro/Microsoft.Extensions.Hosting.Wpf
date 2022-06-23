@@ -3,18 +3,27 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
 {
-    public class WpfThread<TApplication>
-        where TApplication : Application, IApplicationInitializeComponent, new()
+    /// <summary>
+    /// Internal implementation of <see cref="IWpfThread{TApplication}"/>. 
+    /// </summary>
+    /// <remarks>This type is only used inside the library.</remarks>
+    /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+    internal class WpfThread<TApplication>
+        : IWpfThread<TApplication> where TApplication : Application, IApplicationInitializeComponent, new()
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly WpfContext<TApplication> _wpfContext;
         private Action<WpfContext<TApplication>>? _preContextInitialization;
         private SynchronizationContext? _synchronizationContext;
 
-        public WpfContext<TApplication> WpfContext { get; }
+        IWpfContext IWpfThread.WpfContext => _wpfContext;
+
+        public IWpfContext<TApplication> WpfContext => _wpfContext;
 
         public Thread MainThread { get; }
 
@@ -28,7 +37,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         public WpfThread(IServiceProvider serviceProvider, WpfContext<TApplication> wpfContext)
         {
             _serviceProvider = serviceProvider;
-            WpfContext = wpfContext;
+            _wpfContext = wpfContext;
             //Create a thread which runs the UI
             MainThread = new Thread(InternalUiThreadStart)
             {
@@ -39,27 +48,24 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
             MainThread.SetApartmentState(ApartmentState.STA);
         }
 
-        /// <summary>
-        /// Start the DI service on the thread
-        /// </summary>
+        /// <inheritdoc />
         public void Start()
         {
             MainThread.Start();
         }
 
-        /// <summary>
-        /// Handle the application exit
-        /// </summary>
+        /// <inheritdoc />
         public void HandleApplicationExit()
         {
-            if (!WpfContext.IsRunning)
+            if (!_wpfContext.IsRunning)
             {
                 return;
             }
 
-            //We need this because otherwise if we have an active open window and call StopApplication, we will get an exception
-            //This might happens if HandleApplicationExit was called manually, for example via tray
-            WpfContext.WpfApplication.CloseAllWindowsIfAny();
+            //We need this because otherwise if we have an active open window and call StopApplication, we will get an exception.
+            //The exception happens only in certain scenario, for example when UIElement.Visibility is involved.
+            //The call of StopApplication happens if HandleApplicationExit was called manually, for example via tray.
+            _wpfContext.WpfApplication.CloseAllWindowsIfAny();
 
             var applicationLifeTime = _serviceProvider.GetService<IHostApplicationLifetime>();
             applicationLifeTime?.StopApplication();
@@ -90,7 +96,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
 
             //We must set this if default / third party lifetime is used.
             //Only observe event if we don't have WpfLifetime linked that already listens and calls StopApplication on demand
-            if (!WpfContext.IsLifetimeLinked)
+            if (!_wpfContext.IsLifetimeLinked)
             {
                 // Register to the WPF application exit to stop the host application
                 application.Exit += (_, _) =>
@@ -100,10 +106,10 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
             }
 
             // Store the application for others to interact
-            WpfContext.SetWpfApplication(application);
+            _wpfContext.SetWpfApplication(application);
             //Initialize all internal app properties
             application.InitializeComponent();
-            _preContextInitialization?.Invoke(WpfContext);
+            _preContextInitialization?.Invoke(_wpfContext);
         }
 
         /// <summary>
@@ -112,20 +118,20 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         private void UiThreadStart()
         {
             // Mark the application as running
-            WpfContext.IsRunning = true;
+            _wpfContext.IsRunning = true;
             //Since tray icon should be created in the STA thread we have to use lambda
             //TODO: make a better abstraction to make possible to move TrayIcon to separate library.
-            var trayIconFunction = _serviceProvider.GetService<Func<WpfThread<TApplication>, ITrayIcon<TApplication>>>();
+            var trayIconFunction = _serviceProvider.GetService<Func<IWpfThread<TApplication>, ITrayIcon<TApplication>>>();
             if (trayIconFunction is not null)
             {
                 // Create icon if we used <see cref="WpfHostingExtensions.AddWpfTrayIcon{TTrayIcon, TApplication}"/>
                 using var trayIcon = trayIconFunction(this);
                 trayIcon.CreateNotifyIcon();
-                WpfContext.WpfApplication?.Run();
+                _wpfContext.WpfApplication?.Run();
             }
             else
             {
-                WpfContext.WpfApplication?.Run();
+                _wpfContext.WpfApplication?.Run();
             }
         }
 
@@ -143,7 +149,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         /// <summary>
         /// Pre initialization that happens before <see cref="Application.Run()"/>. This action happens on UI thread.
         /// </summary>
-        internal void SetPreContextInitialization(Action<WpfContext<TApplication>> preContextInitialization)
+        internal void SetPreContextInitialization(Action<IWpfContext<TApplication>> preContextInitialization)
         {
             _preContextInitialization = preContextInitialization;
         }

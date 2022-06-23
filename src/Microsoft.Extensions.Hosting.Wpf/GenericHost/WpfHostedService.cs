@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
@@ -9,8 +10,8 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         : IHostedService where TApplication : Application, IApplicationInitializeComponent, new()
     {
         private readonly ILogger<WpfHostedService<TApplication>> _logger;
-        private readonly WpfThread<TApplication> _wpfThread;
-        private readonly WpfContext<TApplication> _wpfContext;
+        private readonly IWpfThread<TApplication> _wpfThread;
+        private readonly IWpfContext<TApplication> _wpfContext;
 
         /// <summary>
         /// The constructor which takes all the DI objects
@@ -18,7 +19,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
         /// <param name="logger">ILogger</param>
         /// <param name="wpfThread">WpfThread</param>
         /// <param name="wpfContext">WpfContext</param>
-        public WpfHostedService(ILogger<WpfHostedService<TApplication>> logger, WpfThread<TApplication> wpfThread, WpfContext<TApplication> wpfContext)
+        public WpfHostedService(ILogger<WpfHostedService<TApplication>> logger, IWpfThread<TApplication> wpfThread, IWpfContext<TApplication> wpfContext)
         {
             _logger = logger;
             _wpfThread = wpfThread;

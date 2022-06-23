@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Windows.Forms;
 using HostingReactiveUISimpleInjector.Properties;
-using Microsoft.Extensions.Hosting.Wpf.GenericHost;
+using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 
 namespace HostingReactiveUISimpleInjector
@@ -16,9 +16,9 @@ namespace HostingReactiveUISimpleInjector
         private ToolStripMenuItem? _versionItem;
         private IContainer? _components;
 
-        public WpfThread<App> WpfThread { get; }
+        public IWpfThread<App> WpfThread { get; }
 
-        public TrayIcon(WpfThread<App> wpfThread)
+        public TrayIcon(IWpfThread<App> wpfThread)
         {
             WpfThread = wpfThread;
         }

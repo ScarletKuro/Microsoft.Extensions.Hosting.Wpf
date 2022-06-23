@@ -55,7 +55,7 @@ namespace HostingReactiveUISimpleInjectorFlowingScope
 
                 return new App(logger);
             });
-            services.AddThreadSwitching<App>();
+            services.AddThreadSwitching();
             services.AddWpfTrayIcon<TrayIcon, App>(wpfThread => new TrayIcon(wpfThread));
         }
     }
