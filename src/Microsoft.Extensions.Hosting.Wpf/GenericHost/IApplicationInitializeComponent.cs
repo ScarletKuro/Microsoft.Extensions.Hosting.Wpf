@@ -1,7 +1,6 @@
-﻿namespace Microsoft.Extensions.Hosting.Wpf.GenericHost
+﻿namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
+
+public interface IApplicationInitializeComponent
 {
-    public interface IApplicationInitializeComponent
-    {
-        void InitializeComponent();
-    }
+    void InitializeComponent();
 }

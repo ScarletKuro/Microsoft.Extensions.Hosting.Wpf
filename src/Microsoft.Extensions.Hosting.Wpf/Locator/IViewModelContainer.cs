@@ -1,7 +1,6 @@
-﻿namespace Microsoft.Extensions.Hosting.Wpf.Locator
+﻿namespace Microsoft.Extensions.Hosting.Wpf.Locator;
+
+public interface IViewModelContainer
 {
-    public interface IViewModelContainer
-    {
-        T GetService<T>() where T : class;
-    }
+    T GetService<T>() where T : class;
 }
