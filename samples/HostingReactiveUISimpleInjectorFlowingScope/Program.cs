@@ -4,7 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Wpf;
 using Microsoft.Extensions.Hosting.Wpf.Bootstrap;
 using Microsoft.Extensions.Hosting.Wpf.Threading;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 using NLog.Extensions.Logging;
 using SimpleInjector;
 
@@ -49,14 +49,9 @@ namespace HostingReactiveUISimpleInjectorFlowingScope
                 options.AddLogging();
             });
             services.AddBootstrap<Container, RootBoot>();
-            services.AddWpf(serviceProvider =>
-            {
-                var logger = serviceProvider.GetRequiredService<ILogger<App>>();
-
-                return new App(logger);
-            });
+            services.AddWpf<App>();
             services.AddThreadSwitching();
-            services.AddWpfTrayIcon<TrayIcon, App>(wpfThread => new TrayIcon(wpfThread));
+            services.AddWpfTrayIcon<TrayIcon>();
         }
     }
 }

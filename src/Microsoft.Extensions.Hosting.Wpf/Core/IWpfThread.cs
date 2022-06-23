@@ -1,6 +1,5 @@
 ﻿using System.Threading;
 using System.Windows;
-using Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Core;
 
@@ -24,7 +23,7 @@ public interface IWpfThread
 }
 
 public interface IWpfThread<out TApplication>
-    : IWpfThread where TApplication : Application, IApplicationInitializeComponent, new()
+    : IWpfThread where TApplication : Application, IApplicationInitializeComponent
 {
     new IWpfContext<TApplication> WpfContext { get; }
 }

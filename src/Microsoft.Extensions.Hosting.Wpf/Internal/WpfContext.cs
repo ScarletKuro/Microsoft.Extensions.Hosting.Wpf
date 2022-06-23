@@ -2,8 +2,9 @@
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
-namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
+namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 
 /// <summary>
 /// Internal implementation of <see cref="IWpfContext{TApplication}"/>. 
@@ -11,14 +12,14 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 /// <remarks>This type is only used inside the library.</remarks>
 /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
 internal class WpfContext<TApplication>
-    : IWpfContext<TApplication> where TApplication : Application, new()
+    : IWpfContext<TApplication> where TApplication : Application
 {
     private TApplication? _wpfApplication;
     private bool _isLifetimeLinked;
     private bool _isRunning;
 
     /// <summary>
-    /// Shows if <see cref="WpfLifetime{TApplication}"/> is used.
+    /// Shows if <see cref="WpfLifetime"/> is used.
     /// </summary>
     public bool IsLifetimeLinked
     {

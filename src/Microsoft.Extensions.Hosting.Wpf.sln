@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hostin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Wpf.Bootstrap", "Microsoft.Extensions.Hosting.Wpf.Bootstrap\Microsoft.Extensions.Hosting.Wpf.Bootstrap.csproj", "{E283F61F-5910-4C02-BFF1-8C5A934D81A0}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Wpf.TrayIcon", "Microsoft.Extensions.Hosting.Wpf.TrayIcon\Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj", "{0DD6647F-5395-424C-B59D-41C914B679EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{E283F61F-5910-4C02-BFF1-8C5A934D81A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E283F61F-5910-4C02-BFF1-8C5A934D81A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E283F61F-5910-4C02-BFF1-8C5A934D81A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0DD6647F-5395-424C-B59D-41C914B679EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DD6647F-5395-424C-B59D-41C914B679EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DD6647F-5395-424C-B59D-41C914B679EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DD6647F-5395-424C-B59D-41C914B679EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

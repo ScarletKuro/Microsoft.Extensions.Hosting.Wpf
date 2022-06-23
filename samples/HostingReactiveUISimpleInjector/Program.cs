@@ -2,9 +2,9 @@
 using HostingReactiveUISimpleInjector.Locator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting.Wpf;
 using Microsoft.Extensions.Hosting.Wpf.Bootstrap;
+using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 using NLog.Extensions.Logging;
 using SimpleInjector;
 
@@ -17,15 +17,12 @@ namespace HostingReactiveUISimpleInjector
         /// </summary>
         public static void Main(string[] args)
         {
-            using var container = RootBoot.CreateContainer();
-            //You can skip SimpleInjectorViewModelContainer, see comments in SimpleInjectorViewModelContainer class
-            using var viewModelContainer = new SimpleInjectorViewModelContainer(container);
+            using var container = RootBoot.CreateContainer(); //Creating SimpleInjector container, we didn't register here anything yet
             using IHost host = CreateHostBuilder(container, args)
                 .Build()
                 .UseSimpleInjector(container)
                 .UseWpfContainerBootstrap(container)
-                //Or UseWpfViewModelLocator<App, ViewModelLocator>(new ViewModelLocator(container));
-                .UseWpfViewModelLocator<App, ViewModelLocator>(viewModelContainer);
+                .UseWpfViewModelLocator<App, ViewModelLocator>(new ViewModelLocator(container));
             host.Run();
         }
 
@@ -52,13 +49,8 @@ namespace HostingReactiveUISimpleInjector
                 options.AddLogging();
             });
             services.AddBootstrap<Container, RootBoot>();
-            services.AddWpf(serviceProvider =>
-            {
-                var logger = serviceProvider.GetRequiredService<ILogger<App>>();
-
-                return new App(logger);
-            });
-            services.AddWpfTrayIcon<TrayIcon, App>(wpfThread => new TrayIcon(wpfThread));
+            services.AddWpf<App>();
+            services.AddWpfTrayIcon<TrayIcon>();
         }
     }
 }

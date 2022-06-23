@@ -4,9 +4,8 @@ using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Wpf.Core;
-using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 
-namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
+namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 
 /// <summary>
 /// Internal implementation of <see cref="IWpfThread{TApplication}"/>. 
@@ -14,7 +13,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 /// <remarks>This type is only used inside the library.</remarks>
 /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
 internal class WpfThread<TApplication>
-    : IWpfThread<TApplication> where TApplication : Application, IApplicationInitializeComponent, new()
+    : IWpfThread<TApplication> where TApplication : Application, IApplicationInitializeComponent
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly WpfContext<TApplication> _wpfContext;
@@ -91,7 +90,7 @@ internal class WpfThread<TApplication>
         var synchronizationContext = new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher);
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
         _synchronizationContext = synchronizationContext;
-            
+
         var application = CreateApplication();
 
         //We must set this if default / third party lifetime is used.
@@ -119,31 +118,24 @@ internal class WpfThread<TApplication>
     {
         // Mark the application as running
         _wpfContext.IsRunning = true;
-        //Since tray icon should be created in the STA thread we have to use lambda
-        //TODO: make a better abstraction to make possible to move TrayIcon to separate library.
-        var trayIconFunction = _serviceProvider.GetService<Func<IWpfThread<TApplication>, ITrayIcon<TApplication>>>();
-        if (trayIconFunction is not null)
+
+        var wpfComponentsFunc = _serviceProvider.GetServices<Func<IWpfComponent>>();
+        using var disposableList = new DisposableList<IWpfComponent>();
+        foreach (var wpfComponentFunc in wpfComponentsFunc)
         {
-            // Create icon if we used <see cref="WpfHostingExtensions.AddWpfTrayIcon{TTrayIcon, TApplication}"/>
-            using var trayIcon = trayIconFunction(this);
-            trayIcon.CreateNotifyIcon();
-            _wpfContext.WpfApplication?.Run();
+            var wpfComponent = wpfComponentFunc.Invoke();
+            wpfComponent.InitializeComponent();
+            disposableList.Add(wpfComponent);
         }
-        else
-        {
-            _wpfContext.WpfApplication?.Run();
-        }
+
+        //Blocking method until application exit.
+        _wpfContext.WpfApplication?.Run();
     }
 
     private TApplication CreateApplication()
     {
-        var applicationFunction = _serviceProvider.GetService<Func<IServiceProvider, TApplication>>();
-        if (applicationFunction is not null)
-        {
-            return applicationFunction(_serviceProvider);
-        }
-
-        return new TApplication();
+        var applicationFunction = _serviceProvider.GetRequiredService<Func<TApplication>>();
+        return applicationFunction.Invoke();
     }
 
     /// <summary>

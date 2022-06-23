@@ -9,14 +9,14 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
-public class WpfLifetime<TApplication> : IHostLifetime, IDisposable where TApplication : Application, new()
+public class WpfLifetime : IHostLifetime, IDisposable
 {
     private readonly ManualResetEvent _shutdownBlock = new(false);
     private CancellationTokenRegistration _applicationStartedRegistration;
     private CancellationTokenRegistration _applicationStoppingRegistration;
     private CancellationTokenRegistration _applicationStoppedRegistration;
 
-    private IWpfContext<TApplication> WpfContext { get; }
+    private IWpfContext WpfContext { get; }
 
     private WpfLifeTimeOptions Options { get; }
 
@@ -29,7 +29,7 @@ public class WpfLifetime<TApplication> : IHostLifetime, IDisposable where TAppli
     private ILogger Logger { get; }
 
     public WpfLifetime(
-        IWpfContext<TApplication> wpfContext,
+        IWpfContext wpfContext,
         IOptions<WpfLifeTimeOptions> options,
         IHostEnvironment environment,
         IHostApplicationLifetime applicationLifetime,
@@ -39,7 +39,7 @@ public class WpfLifetime<TApplication> : IHostLifetime, IDisposable where TAppli
     }
 
     public WpfLifetime(
-        IWpfContext<TApplication> wpfContext,
+        IWpfContext wpfContext,
         IOptions<WpfLifeTimeOptions> options,
         IHostEnvironment environment,
         IHostApplicationLifetime applicationLifetime,
@@ -61,15 +61,15 @@ public class WpfLifetime<TApplication> : IHostLifetime, IDisposable where TAppli
 
         _applicationStartedRegistration = ApplicationLifetime
             .ApplicationStarted
-            .Register(state => ((WpfLifetime<TApplication>)state!).OnApplicationStarted(), this);
+            .Register(state => ((WpfLifetime)state!).OnApplicationStarted(), this);
 
         _applicationStoppingRegistration = ApplicationLifetime
             .ApplicationStopping
-            .Register(state => ((WpfLifetime<TApplication>)state!).OnApplicationStopping(), this);
+            .Register(state => ((WpfLifetime)state!).OnApplicationStopping(), this);
 
         _applicationStoppedRegistration = ApplicationLifetime
             .ApplicationStopped
-            .Register(state => ((WpfLifetime<TApplication>)state!).OnWpfApplicationStopped(), this);
+            .Register(state => ((WpfLifetime)state!).OnWpfApplicationStopped(), this);
 
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 
@@ -87,7 +87,7 @@ public class WpfLifetime<TApplication> : IHostLifetime, IDisposable where TAppli
         if (!Options.SuppressStatusMessages)
         {
             Logger.LogInformation("Wpf application started");
-            Logger.LogInformation("Lifetime: {Lifetime}", nameof(WpfLifetime<TApplication>));
+            Logger.LogInformation("Lifetime: {Lifetime}", nameof(WpfLifetime));
             Logger.LogInformation("Hosting environment: {EnvName}", Environment.EnvironmentName);
             Logger.LogInformation("Content root path: {ContentRoot}", Environment.ContentRootPath);
         }

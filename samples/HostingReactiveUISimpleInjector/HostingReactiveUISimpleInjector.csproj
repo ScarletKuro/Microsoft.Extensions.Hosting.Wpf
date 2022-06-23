@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Extensions.Hosting.Wpf.Bootstrap\Microsoft.Extensions.Hosting.Wpf.Bootstrap.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Extensions.Hosting.Wpf.TrayIcon\Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Extensions.Hosting.Wpf\Microsoft.Extensions.Hosting.Wpf.csproj" />
   </ItemGroup>
 

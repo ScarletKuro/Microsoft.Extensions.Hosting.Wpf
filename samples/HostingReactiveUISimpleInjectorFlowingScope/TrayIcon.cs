@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 
 namespace HostingReactiveUISimpleInjectorFlowingScope
 {
-    public class TrayIcon : ITrayIcon<App>
+    public class TrayIcon : ITrayIcon
     {
         private NotifyIcon? _notifyIcon;
         private ContextMenuStrip? _contextMenu;
@@ -23,7 +23,7 @@ namespace HostingReactiveUISimpleInjectorFlowingScope
             WpfThread = wpfThread;
         }
 
-        public void CreateNotifyIcon()
+        public void InitializeComponent()
         {
             _components = new Container();
             _contextMenu = new ContextMenuStrip();
@@ -33,7 +33,6 @@ namespace HostingReactiveUISimpleInjectorFlowingScope
             //Initialize exitItem
             _exitItem.Text = "E&xit";
             _exitItem.Click += ExitItemOnClick;
-
 
             //Initialize versionItem
             _versionItem.Enabled = false;

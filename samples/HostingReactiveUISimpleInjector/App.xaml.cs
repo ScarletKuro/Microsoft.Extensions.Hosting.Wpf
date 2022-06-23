@@ -1,10 +1,9 @@
 ﻿using System.Reactive.Concurrency;
 using System.Windows;
 using HostingReactiveUISimpleInjector.Locator;
-using Microsoft.Extensions.Hosting.Wpf.GenericHost;
+using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Hosting.Wpf.Locator;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using ReactiveUI;
 
 namespace HostingReactiveUISimpleInjector
@@ -16,8 +15,12 @@ namespace HostingReactiveUISimpleInjector
     {
         private readonly ILogger<App> _logger;
 
-        public App() : this(NullLogger<App>.Instance)
+        private App() : this(null!)
         {
+            //!!It's important to have an parametless constructor because app.g.cs is auto-generating own Main that requires a parametless constructor.
+            //We cannot disable this behaviour but we can trick it.
+            //Its also important to have  the constructor PRIVATE if you are injecting something in App like below
+            //Otherwise the activator will use parametless constructor to create instance and not the one with services
         }
 
         //Example that we can even inject logging here
@@ -26,7 +29,7 @@ namespace HostingReactiveUISimpleInjector
             _logger = logger;
         }
 
-        public void Initialize(ViewModelLocator viewModelLocator)
+        public void Initialize()
         {
             //Here we can initialize important things. This method always runs on UI thread. 
             //If you don't need to initialize anything, just set the ViewModelLocator
@@ -36,7 +39,10 @@ namespace HostingReactiveUISimpleInjector
 
             //Set correct scheduler, even though it should be correct since we resolve in correct thread(line below), but just in case let it be reassign. 
             RxApp.MainThreadScheduler = new WaitForDispatcherScheduler(() => new DispatcherScheduler(Dispatcher));
+        }
 
+        public void InitializeLocator(ViewModelLocator viewModelLocator)
+        {
             //This is not really correct(in terms of SimpleInjector philosophy, but correct for ReactiveUI), as we doing Verify after the first resolve
             //Verify was earlier in the end of RootBoot, but turns out this will kill ReactiveCommand(>14.1.1 version) scheduling
             //because Verify would resolve the ViewModels once(for check) on non UI thread making Splat to initialize on wrong scheduler(NB! above code line fixes it).

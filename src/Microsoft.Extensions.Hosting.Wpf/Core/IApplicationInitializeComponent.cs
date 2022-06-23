@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
+﻿namespace Microsoft.Extensions.Hosting.Wpf.Core;
 
 public interface IApplicationInitializeComponent
 {

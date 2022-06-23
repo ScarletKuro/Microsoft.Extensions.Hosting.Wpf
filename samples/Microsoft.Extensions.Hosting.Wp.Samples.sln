@@ -17,6 +17,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostingReactiveUISimpleInje
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Wpf.Threading", "..\src\Microsoft.Extensions.Hosting.Wpf.Threading\Microsoft.Extensions.Hosting.Wpf.Threading.csproj", "{5F2FEC97-BF98-4CB7-B677-561318C76A19}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{27668857-E31F-45A2-B3EC-E8E2851F5BD7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Wpf.TrayIcon", "..\src\Microsoft.Extensions.Hosting.Wpf.TrayIcon\Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj", "{BF0EBD31-A742-4295-B2B2-F034B344856A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,9 +55,19 @@ Global
 		{5F2FEC97-BF98-4CB7-B677-561318C76A19}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F2FEC97-BF98-4CB7-B677-561318C76A19}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F2FEC97-BF98-4CB7-B677-561318C76A19}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF0EBD31-A742-4295-B2B2-F034B344856A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF0EBD31-A742-4295-B2B2-F034B344856A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF0EBD31-A742-4295-B2B2-F034B344856A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF0EBD31-A742-4295-B2B2-F034B344856A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8614B90A-0063-4BDE-AB5D-5FA90C9B2648} = {27668857-E31F-45A2-B3EC-E8E2851F5BD7}
+		{80ED9AC7-8DA6-4946-9B43-A6170CF78D12} = {27668857-E31F-45A2-B3EC-E8E2851F5BD7}
+		{5F2FEC97-BF98-4CB7-B677-561318C76A19} = {27668857-E31F-45A2-B3EC-E8E2851F5BD7}
+		{BF0EBD31-A742-4295-B2B2-F034B344856A} = {27668857-E31F-45A2-B3EC-E8E2851F5BD7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {136A0EC8-5724-4ED3-9341-0800526C4316}

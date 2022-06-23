@@ -12,7 +12,7 @@ internal static class ApplicationExtensions
     /// <param name="instance">Instance of WPF <see cref="Application"/></param>
     /// <returns>When WPF application is shutdown return <c>true</c></returns>
     internal static bool IsWpfShutdown<TApplication>(this TApplication instance)
-        where TApplication : Application, new()
+        where TApplication : Application
     {
         BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
         FieldInfo? field = typeof(Application).GetField("_appIsShutdown", bindFlags);
@@ -21,7 +21,7 @@ internal static class ApplicationExtensions
     }
 
     internal static void InvokeIfRequired<TApplication>(this TApplication instance, Action action)
-        where TApplication : Application, new()
+        where TApplication : Application
     {
         if (!instance.CheckAccess())
         {
@@ -34,7 +34,7 @@ internal static class ApplicationExtensions
     }
 
     internal static void CloseAllWindowsIfAny<TApplication>(this TApplication? application)
-        where TApplication : Application, new()
+        where TApplication : Application
     {
         if (application is null)
         {

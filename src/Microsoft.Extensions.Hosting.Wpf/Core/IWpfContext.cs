@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Core;
 public interface IWpfContext
 {
     /// <summary>
-    /// Shows if <see cref="WpfLifetime{TApplication}"/> is used.
+    /// Shows if <see cref="WpfLifetime"/> is used.
     /// </summary>
     bool IsLifetimeLinked { get; internal set; }
 
@@ -28,7 +28,7 @@ public interface IWpfContext
 }
 
 public interface IWpfContext<out TApplication> : IWpfContext
-    where TApplication : Application, new()
+    where TApplication : Application
 {
     /// <summary>
     /// Instance of WPF <see cref="TApplication"/>.

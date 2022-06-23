@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 
 namespace HostingReactiveUISimpleInjector
 {
-    public class TrayIcon : ITrayIcon<App>
+    public class TrayIcon : ITrayIcon
     {
         private NotifyIcon? _notifyIcon;
         private ContextMenuStrip? _contextMenu;
@@ -23,7 +23,7 @@ namespace HostingReactiveUISimpleInjector
             WpfThread = wpfThread;
         }
 
-        public void CreateNotifyIcon()
+        public void InitializeComponent()
         {
             _components = new Container();
             _contextMenu = new ContextMenuStrip();

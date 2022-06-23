@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Wpf.Core;
-using Microsoft.Extensions.Hosting.Wpf.GenericHost;
 using Microsoft.VisualStudio.Threading;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Threading;
