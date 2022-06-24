@@ -19,7 +19,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddWpf<TApplication>(this IServiceCollection services)
         where TApplication : Application, IApplicationInitializeComponent
     {
-        //Only single TApplication should exist;
+        //Only single TApplication should exist.
         services.TryAddSingleton<Func<TApplication>>(provider =>
         {
             return () => ActivatorUtilities.CreateInstance<TApplication>(provider);
@@ -39,7 +39,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddWpf<TApplication>(this IServiceCollection services, Func<IServiceProvider, TApplication> createApplication)
         where TApplication : Application, IApplicationInitializeComponent
     {
-        //Only single TApplication should exist;
+        //Only single TApplication should exist.
         services.TryAddSingleton<Func<TApplication>>(provider =>
         {
             //Rare case when someone needs to resolve TApplication implementation manually, or maybe not from the IServiceProvider but another container.

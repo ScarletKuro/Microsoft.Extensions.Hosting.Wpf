@@ -23,7 +23,7 @@ namespace HostingReactiveUISimpleInjectorFlowingScope
                 .Build()
                 .UseSimpleInjector(container)
                 .UseWpfContainerBootstrap(container)
-                .UseWpfInitialization<App>()
+                .UseWpfInitialization<App>();
             host.Run();
         }
 
