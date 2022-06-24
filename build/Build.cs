@@ -28,10 +28,10 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     "release",
     GitHubActionsImage.UbuntuLatest,
     FetchDepth = 0,
-    OnPushBranches = new []{ "main" },
+    OnPushBranches = new []{ "main", "master" },
     OnPushTags = new[] { @"\d+\.\d+\.\d+" },
     PublishArtifacts = true,
-    InvokedTargets = new[] { nameof(Push) },
+    InvokedTargets = new[] { nameof(Pack) },
     ImportSecrets = new[] { nameof(NuGetApiKey) })]
 class Build : NukeBuild
 {
@@ -49,6 +49,7 @@ class Build : NukeBuild
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; //default
     [Parameter][Secret] readonly string NuGetApiKey;
 
+    bool IsTag => GitHubActions.Instance?.Ref?.StartsWith("refs/tags/") ?? false;
 
     [Solution] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
@@ -99,7 +100,7 @@ class Build : NukeBuild
 
     Target Push => _ => _
         .DependsOn(Pack)
-        .OnlyWhenStatic(() => IsServerBuild)
+        .OnlyWhenStatic(() => IsTag && IsServerBuild && GitRepository.IsOnMainOrMasterBranch())
         .Requires(() => NuGetApiKey)
         .Requires(() => Configuration.Equals(Configuration.Release))
         .Executes(() =>

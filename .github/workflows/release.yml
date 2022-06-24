@@ -20,6 +20,7 @@ on:
   push:
     branches:
       - main
+      - master
     tags:
       - \d+\.\d+\.\d+
 
@@ -38,8 +39,8 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Push'
-        run: ./build.cmd Push
+      - name: Run './build.cmd Pack'
+        run: ./build.cmd Pack
         env:
           NuGetApiKey: ${{ secrets.NUGET_API_KEY }}
       - uses: actions/upload-artifact@v1
