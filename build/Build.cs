@@ -30,7 +30,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     FetchDepth = 0,
     OnPushTags = new[] { @"\d+\.\d+\.\d+" },
     PublishArtifacts = true,
-    InvokedTargets = new[] { nameof(Pack) },
+    InvokedTargets = new[] { nameof(Push) },
     ImportSecrets = new[] { nameof(NuGetApiKey) })]
 class Build : NukeBuild
 {
