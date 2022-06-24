@@ -99,7 +99,7 @@ class Build : NukeBuild
 
     Target Push => _ => _
         .DependsOn(Pack)
-        .OnlyWhenStatic(() => IsTag && IsServerBuild && GitRepository.IsOnMainOrMasterBranch())
+        .OnlyWhenStatic(() => IsTag && IsServerBuild)
         .Requires(() => NuGetApiKey)
         .Requires(() => Configuration.Equals(Configuration.Release))
         .Executes(() =>
