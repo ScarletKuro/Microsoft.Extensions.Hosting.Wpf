@@ -10,9 +10,6 @@
   
   <PropertyGroup>
     <IsPackable>true</IsPackable>
-    <IncludeSymbols>true</IncludeSymbols>
-    <Version>2.0.0</Version>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Authors>ScarletKuro</Authors>
     <Description>Unofficial implementation of Microsoft.Extensions.Hosting for WPF.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -22,6 +19,17 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <AssemblyName>Extensions.Hosting.Wpf</AssemblyName>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup> 
   
   <ItemGroup>
     <None Include="..\..\icon.png">
@@ -33,8 +41,17 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
+  
+  <!-- https://github.com/dotnet/sdk/issues/3592 -->
+  <ItemGroup>
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App" IsWindowsOnly="false" />
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App.WPF" IsWindowsOnly="false" />
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App.WindowsForms" IsWindowsOnly="false" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.5.107" PrivateAssets="all" />
   </ItemGroup>
 </Project>

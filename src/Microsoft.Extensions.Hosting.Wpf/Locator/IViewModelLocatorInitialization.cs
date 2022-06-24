@@ -1,12 +1,13 @@
-﻿using System.Windows;
+﻿using Microsoft.Extensions.Hosting.Wpf.Core;
 
-namespace Microsoft.Extensions.Hosting.Wpf.Locator
+namespace Microsoft.Extensions.Hosting.Wpf.Locator;
+
+public interface IViewModelLocatorInitialization<in TViewModelLocator> 
+    : IApplicationInitialize
 {
-    public interface IViewModelLocatorInitialization<in TViewModelLocator>
-    {
-        /// <summary>
-        /// Pre initialization that happens before <see cref="Application.Run()"/>. This action happens on UI thread.
-        /// </summary>
-        void Initialize(TViewModelLocator viewModelLocator);
-    }
+    /// <summary>
+    /// Pre initialization that happens after <see cref="IApplicationInitialize.Initialize"/>. This action happens on UI thread.
+    /// This method should be used to set <see cref="AbstractViewModelLocatorHost{TViewModelLocator}.SetViewModelLocator"/>
+    /// </summary>
+    void InitializeLocator(TViewModelLocator viewModelLocator);
 }

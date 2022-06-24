@@ -5,10 +5,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using HostingReactiveUISimpleInjectorFlowingScope.Context;
 using HostingReactiveUISimpleInjectorFlowingScope.Service;
-using Microsoft.Extensions.Hosting.Wpf.GenericHost;
-using Microsoft.Extensions.Hosting.Wpf.Locator;
+using Microsoft.Extensions.Hosting.Wpf;
+using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.Threading;
 using ReactiveUI;
 using SimpleInjector;
@@ -18,21 +17,32 @@ namespace HostingReactiveUISimpleInjectorFlowingScope
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application, IViewModelLocatorInitialization<Container>, IApplicationInitializeComponent
+    public partial class App : Application, IApplicationInitialize, IApplicationInitializeComponent
     {
         private readonly ILogger<App> _logger;
+        private readonly Container _container;
 
-        public App() : this(NullLogger<App>.Instance)
+        private App() : this(null!, null!)
         {
+            //!!It's important to have an parametless constructor because app.g.cs is auto-generating own Main that requires a parametless constructor.
+            //We cannot disable this behaviour but we can trick it.
+            //Its also important to have  the constructor PRIVATE if you are injecting something in App like below i.e. having multiple constructors.
+            //Otherwise the activator will use parametless constructor to create the instance and not the one with services.
+
+            //A diagnostic method that will check for invalid constructor configuration
+            //It will throw and error in case if you have multiple constructor and you don't have a private parametless constructor
+            this.CheckForInvalidConstructorConfiguration();
         }
 
         //Example that we can even inject logging here
-        public App(ILogger<App> logger)
+        public App(ILogger<App> logger, Container container)
         {
+            this.CheckForInvalidConstructorConfiguration();
             _logger = logger;
+            _container = container;
         }
 
-        public void Initialize(Container container)
+        public void Initialize()
         {
             //Here we can initialize important things. This method always runs on UI thread. 
 
@@ -47,11 +57,12 @@ namespace HostingReactiveUISimpleInjectorFlowingScope
             //because Verify would resolve the ViewModels once(for check) on non UI thread making Splat to initialize on wrong scheduler(NB! above code line fixes it).
             //As workaround we performing verify on UI thread.
             //NB! Even though the first lines fixes the problem and we can move Verify to normal place and some changes in ReactiveCommand are rolled back now, I don't want to risk it since sometimes ReactiveUI does some breaking changes.
-            container.Verify(); //Calls SimpleInjector verify https://docs.simpleinjector.org/en/latest/howto.html#verify-configuration
+            _container.Verify(); //Calls SimpleInjector verify https://docs.simpleinjector.org/en/latest/howto.html#verify-configuration
 
             //Simulating a "request".
-            _ = new Timer(state=> SimulateRequest(state,container), null, TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(-1));
+            _ = new Timer(state => SimulateRequest(state, _container), null, TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(-1));
         }
+
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD101:Avoid unsupported async delegates", Justification = "Suppressing it here since im using async body in parallel for testing purpose")]
         private void SimulateRequest(object? state, Container container)

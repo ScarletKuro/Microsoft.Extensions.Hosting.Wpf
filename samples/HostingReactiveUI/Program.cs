@@ -4,7 +4,7 @@ using HostingReactiveUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Wpf;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 using NLog.Extensions.Logging;
 
 namespace HostingReactiveUI
@@ -40,13 +40,9 @@ namespace HostingReactiveUI
                     ShutdownOnDispose = true
                 });
             });
-            services.AddWpf(serviceProvider =>
-            {
-                var logger = serviceProvider.GetRequiredService<ILogger<App>>();
+            services.AddWpf<App>();
 
-                return new App(logger);
-            });
-            services.AddWpfTrayIcon<TrayIcon, App>(wpfThread => new TrayIcon(wpfThread));
+            services.AddWpfTrayIcon<TrayIcon>();
 
             //Add our view models
             services.AddTransient<MainViewModel>();

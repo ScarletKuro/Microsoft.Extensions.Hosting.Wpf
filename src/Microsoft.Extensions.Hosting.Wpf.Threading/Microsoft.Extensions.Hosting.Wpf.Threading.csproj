@@ -8,9 +8,6 @@
   
   <PropertyGroup>
     <IsPackable>true</IsPackable>
-    <IncludeSymbols>true</IncludeSymbols>
-    <Version>2.0.0</Version>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Authors>ScarletKuro</Authors>
     <Description>Adds Microsoft.VisualStudio.Threading support for Extensions.Hosting.Wpf</Description>
     <PackageReadmeFile>Threading.md</PackageReadmeFile>
@@ -20,6 +17,17 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <AssemblyName>Extensions.Hosting.Wpf.Threading</AssemblyName>
   </PropertyGroup>
+  
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup> 
   
   <ItemGroup>
     <None Include="..\..\docs\Threading.md">
@@ -31,10 +39,19 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
+  
+  <!-- https://github.com/dotnet/sdk/issues/3592 -->
+  <ItemGroup>
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App" IsWindowsOnly="false" />
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App.WPF" IsWindowsOnly="false" />
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App.WindowsForms" IsWindowsOnly="false" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.2.32" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.2.32" PrivateAssets="none" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.5.107" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
