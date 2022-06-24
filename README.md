@@ -3,7 +3,8 @@
 [![Nuget](https://img.shields.io/nuget/dt/Extensions.Hosting.Wpf?color=ff4081&label=nuget%20downloads&logo=nuget)](https://www.nuget.org/packages/Extensions.Hosting.Wpf/)
 [![GitHub](https://img.shields.io/github/license/ScarletKuro/Microsoft.Extensions.Hosting.Wpf?color=594ae2&logo=github)](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/LICENSE)
 
-Unofficial implementation of Microsoft.Extensions.Hosting for WPF. It is inspired by [Dapplo](https://github.com/dapplo/Dapplo.Microsoft.Extensions.Hosting) and this extensions is focused only on WPF and doesn't have Plugins, SingleInstance etc features like Dapplo. It's main feature is to provide the ability to bind DataContext with ViewModels directly in XAML where the ViewModel gets resolved by DI. The second feature is the ability to use TrayIcon with this library because with Microsoft.Extensions.Hosting it's tricky.
+Unofficial implementation of Microsoft.Extensions.Hosting for WPF. It is inspired by [Dapplo](https://github.com/dapplo/Dapplo.Microsoft.Extensions.Hosting) and this extensions is focused only on WPF and doesn't have Plugins, SingleInstance etc features like Dapplo. It's main feature is to provide the ability to bind DataContext with ViewModels directly in XAML where the ViewModel gets resolved by DI.
+This library also has few extensions packages to add features like tray icon, threading swithcing between main thread and threadpool thread, 3rd party containers.
 
 ### [Changelog](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/CHANGELOG.md)
 
@@ -15,7 +16,8 @@ Unofficial implementation of Microsoft.Extensions.Hosting for WPF. It is inspire
 
 ## Getting Started
 This steps including the Locator feature for Views. If you don't want it then just skip to 6 and 7 step.
-In fact, it has alternative method to inject ViewModels to View. Usually used when you need to use closure-scoping with DI. Please, refer to `HostingReactiveUISimpleInjectorFlowingScope` sample.
+
+In fact, it has alternative method to inject ViewModels to View. Usually used when you need to use closure-scoping with DI. Please, refer to `HostingReactiveUISimpleInjectorFlowingScope` sample for such scenario.
 ### 1. First step, make `IViewModelLocator` that will contain your ViewModels. Example:
 ```CSharp
 public interface IViewModelLocator
@@ -78,7 +80,7 @@ public partial class App : Application, IViewModelLocatorInitialization<IViewMod
     }
 }
 ```
-**NB!** `ViewModelLocatorHost.GetInstance(this)` will automatically find the locator even if you rename it(x:Key), but for better perfomance, startup time, memory usage(it will iterate through Application Dictionary) my personal recommendation is to use `ViewModelLocatorHost.GetInstance(this, "Locator")` instead.
+**NB!** `ViewModelLocatorHost.GetInstance(this)` will automatically find the locator even if you rename it(x:Key) in App.xaml, but for better perfomance, startup time, memory usage(it will iterate through Application Dictionary) my personal recommendation is to use `ViewModelLocatorHost.GetInstance(this, "Locator")` instead.
 ### 6. Add Program.cs. Basic example
 ```CSharp
 public class Program

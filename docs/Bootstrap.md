@@ -5,7 +5,7 @@ Not necessary to use, you can register your 3rd DI dependencies also in Configur
 ## Getting Started
 
 ### Install nuget
-```Install-Package Extensions.Hosting.Bootstrap```
+```Install-Package Extensions.Hosting.Wpf.Bootstrap```
 
 ### Example usage with SimpleInjector
 ```CSharp
