@@ -108,7 +108,7 @@ class Build : NukeBuild
 
             Assert.True(!string.IsNullOrEmpty(NuGetApiKey));
 
-            GlobFiles(PackagesDirectory, "*.nupkg", "*.snupkg")
+            GlobFiles(PackagesDirectory, "*.nupkg")
                 .ForEach(x =>
                 {
                     x.NotNullOrEmpty();
@@ -116,6 +116,7 @@ class Build : NukeBuild
                         .SetTargetPath(x)
                         .SetSource(NugetApiUrl)
                         .SetApiKey(NuGetApiKey)
+                        .EnableSkipDuplicate()
                     );
                 });
         });
