@@ -39,7 +39,12 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
-
+  
+  <ItemGroup>
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App" IsWindowsOnly="false" />
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App.WPF" IsWindowsOnly="false" />
+    <KnownFrameworkReference Update="Microsoft.WindowsDesktop.App.WindowsForms" IsWindowsOnly="false" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Extensions.Hosting.Wpf\Microsoft.Extensions.Hosting.Wpf.csproj" />
