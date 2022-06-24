@@ -28,7 +28,6 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     "release",
     GitHubActionsImage.UbuntuLatest,
     FetchDepth = 0,
-    OnPushBranches = new []{ "main", "master" },
     OnPushTags = new[] { @"\d+\.\d+\.\d+" },
     PublishArtifacts = true,
     InvokedTargets = new[] { nameof(Pack) },
