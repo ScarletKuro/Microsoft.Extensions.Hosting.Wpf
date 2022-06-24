@@ -17,13 +17,22 @@ using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 [GitHubActions(
-    "dotnet",
+    "continuous",
     GitHubActionsImage.UbuntuLatest,
     FetchDepth = 0,
     On = new[] { GitHubActionsTrigger.Push },
     PublishArtifacts = true,
     InvokedTargets = new[] { nameof(Compile), nameof(Pack) },
-    ImportSecrets = new[] { (nameof(NuGetApiKey)) })]
+    ImportSecrets = new[] { nameof(NuGetApiKey) })]
+[GitHubActions(
+    "release",
+    GitHubActionsImage.UbuntuLatest,
+    FetchDepth = 0,
+    OnPushBranches = new []{ "main" },
+    OnPushTags = new[] { @"\d+\.\d+\.\d+" },
+    PublishArtifacts = true,
+    InvokedTargets = new[] { nameof(Push) },
+    ImportSecrets = new[] { nameof(NuGetApiKey) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:

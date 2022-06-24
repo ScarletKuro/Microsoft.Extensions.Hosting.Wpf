@@ -9,14 +9,19 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_dotnet --host GitHubActions
+#         nuke --generate-configuration GitHubActions_release --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: dotnet
+name: release
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - \d+\.\d+\.\d+
 
 jobs:
   ubuntu-latest:
@@ -33,8 +38,8 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Compile Pack'
-        run: ./build.cmd Compile Pack
+      - name: Run './build.cmd Push'
+        run: ./build.cmd Push
         env:
           NuGetApiKey: ${{ secrets.NUGET_API_KEY }}
       - uses: actions/upload-artifact@v1
