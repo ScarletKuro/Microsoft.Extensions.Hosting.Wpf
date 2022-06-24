@@ -7,7 +7,7 @@ public interface IViewModelLocatorInitialization<in TViewModelLocator>
 {
     /// <summary>
     /// Pre initialization that happens after <see cref="IApplicationInitialize.Initialize"/>. This action happens on UI thread.
-    /// This method should be used to set <see cref="AbstractViewModelLocatorHost.SetViewModelLocator"/>
+    /// This method should be used to set <see cref="AbstractViewModelLocatorHost{TViewModelLocator}.SetViewModelLocator"/>
     /// </summary>
     void InitializeLocator(TViewModelLocator viewModelLocator);
 }

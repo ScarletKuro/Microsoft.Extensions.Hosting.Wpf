@@ -25,16 +25,43 @@ public static class ServiceCollectionExtensions
             return () => ActivatorUtilities.CreateInstance<TApplication>(provider);
         });
 
+        return services.AddWpfCommonRegistrations<TApplication>();
+    }
+
+
+    /// <summary>
+    /// Adds WPF functionality for GenericHost with default implementation of <see cref="Application" />.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+    /// <param name="createApplication">The function used to create <see cref="Application" /></param>
+    /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+    /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddWpf<TApplication>(this IServiceCollection services, Func<IServiceProvider, TApplication> createApplication)
+        where TApplication : Application, IApplicationInitializeComponent
+    {
+        //Only single TApplication should exist;
+        services.TryAddSingleton<Func<TApplication>>(provider =>
+        {
+            //Rare case when someone needs to resolve TApplication implementation manually, or maybe not from the IServiceProvider but another container.
+            return () => createApplication(provider);
+        });
+
+        return services.AddWpfCommonRegistrations<TApplication>(); ;
+    }
+
+    private static IServiceCollection AddWpfCommonRegistrations<TApplication>(this IServiceCollection services)
+        where TApplication : Application, IApplicationInitializeComponent
+    {
         //Register WpfContext
         var wpfContext = new WpfContext<TApplication>();
-        services.AddSingleton(wpfContext); //for internal usage only
-        services.AddSingleton<IWpfContext<TApplication>>(wpfContext);
-        services.AddSingleton<IWpfContext>(wpfContext);
+        services.TryAddSingleton(wpfContext); //for internal usage only
+        services.TryAddSingleton<IWpfContext<TApplication>>(wpfContext);
+        services.TryAddSingleton<IWpfContext>(wpfContext);
 
         //Register WpfThread
-        services.AddSingleton<WpfThread<TApplication>>();  //for internal usage only
-        services.AddSingleton<IWpfThread<TApplication>>(s => s.GetRequiredService<WpfThread<TApplication>>());
-        services.AddSingleton<IWpfThread>(s => s.GetRequiredService<WpfThread<TApplication>>());
+        services.TryAddSingleton<WpfThread<TApplication>>();  //for internal usage only
+        services.TryAddSingleton<IWpfThread<TApplication>>(s => s.GetRequiredService<WpfThread<TApplication>>());
+        services.TryAddSingleton<IWpfThread>(s => s.GetRequiredService<WpfThread<TApplication>>());
 
         //Register Wpf IHostedService
         services.AddHostedService<WpfHostedService<TApplication>>();

@@ -11,10 +11,11 @@ Unofficial implementation of Microsoft.Extensions.Hosting for WPF. It is inspire
 1. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingSimple) - Minimal getting started project.
 2. [HostingReactiveUI](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUI) - More advanced example with using NLog as logging, ReactiveUI as model-view-viewmodel framework, shows how to use the TrayIcon feature.
 3. [HostingReactiveUISimpleInjector](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjector) - Same as HostingReactiveUI but it also using SimpleInjector. This library doesn't limits your to stick only with `Microsoft.DependencyInjection`. Also shows some more abstractions and internal helpers to handle another DI inside.
-4. [HostingReactiveUISimpleInjectorFlowingScope](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples) - Almost like HostingReactiveUISimpleInjector, with the difference that it shows, how can you use Flowing-Scoping(`ScopedLifestyle.Flowing` with `SimpleInjector` or any other DI with similar scoping). This is even more advanced example and shows how can you support closure-scoping ([The Closure Composition Model](https://blogs.cuttingedge.it/steven/posts/2019/closure-composition-model/)), for ambient-scoping ([The Ambient Composition Model](https://blogs.cuttingedge.it/steven/posts/2019/ambient-composition-model/)) there is usually no need for any special changes. This sample doesn't use the `ViewModelLocatorHost` and shows a totally different approach on how to use `IViewModelLocator` and inject viewmodel for view. It also shows the usage of `Microsoft.Extensions.Hosting.Wpf`.
+4. [HostingReactiveUISimpleInjectorFlowingScope](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples) - Almost like HostingReactiveUISimpleInjector, with the difference that it shows, how can you use Flowing-Scoping(`ScopedLifestyle.Flowing` with `SimpleInjector` or any other DI with similar scoping like MS.DI). This is even more advanced example and shows how can you support closure-scoping ([The Closure Composition Model](https://blogs.cuttingedge.it/steven/posts/2019/closure-composition-model/)), for ambient-scoping ([The Ambient Composition Model](https://blogs.cuttingedge.it/steven/posts/2019/ambient-composition-model/)) there is usually no need for any special changes. This sample doesn't use the `ViewModelLocatorHost` and shows a totally different approach on how to use `IViewModelLocator` and inject viewmodel for view. It also shows the usage of `Microsoft.Extensions.Hosting.Wpf`.
 
 ## Getting Started
 This steps including the Locator feature for Views. If you don't want it then just skip to 6 and 7 step.
+In fact, it has alternative method to inject ViewModels to View. Usually used when you need to use closure-scoping with DI. Please, refer to `HostingReactiveUISimpleInjectorFlowingScope` sample.
 ### 1. First step, make `IViewModelLocator` that will contain your ViewModels. Example:
 ```CSharp
 public interface IViewModelLocator
@@ -59,10 +60,17 @@ public class ViewModelLocatorHost : AbstractViewModelLocatorHost<IViewModelLocat
 ```
 ### 5. Add in App.xaml.cs two interfaces `IViewModelLocatorInitialization<ViewModelLocator>` and `IApplicationInitializeComponent`
 ```CSharp
-public partial class App : Application, IViewModelLocatorInitialization<ViewModelLocator>, IApplicationInitializeComponent
+public partial class App : Application, IViewModelLocatorInitialization<IViewModelLocator>, IApplicationInitializeComponent
 {
-    public void Initialize(ViewModelLocator viewModelLocator)
+    public void Initialize()
     {
+        //Here we can initialize important things. This method always runs on UI thread. 
+        //In this example it's empty as we do not have anything to initialize like ReactiveUI
+    }
+	
+    public void InitializeLocator(IViewModelLocator viewModelLocator)
+    {
+        //Runs after Initialize method.
         //We need to set it so that our <locator:ViewModelLocatorHost x:Key="Locator"/> could resolve ViewModels for DataContext
         //You can also use it as service locator pattern, but I personally recommend you to use it only inside View xaml to bind the DataContext
         var viewModelLocatorHost = ViewModelLocatorHost.GetInstance(this);
@@ -82,7 +90,7 @@ public class Program
 	{
 		using IHost host = CreateHostBuilder(args)
 			.Build()
-			.UseWpfViewModelLocator<App, ViewModelLocator>(provider => new ViewModelLocator(provider));
+			.UseWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider));
 		host.Run();
 	}
 
@@ -103,15 +111,7 @@ public class Program
 	}
 }
 ```
-**NB!** AddWpf has an overload and you can for example add additional services to App
-```CSharp
-services.AddWpf(serviceProvider =>
-{
-	var logger = serviceProvider.GetRequiredService<ILogger<App>>();
 
-	return new App(logger);
-});
-```
 ### 7. We need to add `StartupObject` in our `.csproj`
 ```Xml
 <StartupObject>[Namespace].Program</StartupObject>
@@ -128,7 +128,7 @@ If you want you can use `UseWpfLifetime` but it's pretty much experimental, the 
 private static IHostBuilder CreateHostBuilder(string[] args)
 {
 	return Host.CreateDefaultBuilder(args)
-		.UseWpfLifetime<App>() //<-- new line
+		.UseWpfLifetime() //<-- new line
 		.ConfigureServices(ConfigureServices);
 }
 ```
@@ -137,3 +137,4 @@ private static IHostBuilder CreateHostBuilder(string[] args)
 ## Other features
 1. [Microsoft.Extensions.Hosting.Wpf.Threading](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/docs/Threading.md)
 2. [Microsoft.Extensions.Hosting.Wpf.Bootstrap](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/docs/Bootstrap.md)
+3. [Microsoft.Extensions.Hosting.Wpf.TrayIcon](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/docs/TrayIcon.md)

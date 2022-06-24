@@ -18,6 +18,7 @@ internal class WpfThread<TApplication>
     private readonly IServiceProvider _serviceProvider;
     private readonly WpfContext<TApplication> _wpfContext;
     private Action<WpfContext<TApplication>>? _preContextInitialization;
+    private bool _initializationLocked;
     private SynchronizationContext? _synchronizationContext;
 
     IWpfContext IWpfThread.WpfContext => _wpfContext;
@@ -143,6 +144,11 @@ internal class WpfThread<TApplication>
     /// </summary>
     internal void SetPreContextInitialization(Action<IWpfContext<TApplication>> preContextInitialization)
     {
+        if (_initializationLocked)
+        {
+            throw new InvalidOperationException($"Do not use .UseWpfInitialization<{typeof(TApplication).Name}> and .UseWpfViewModelLocator<{typeof(TApplication).Name}> together or call them multiple times.");
+        }
         _preContextInitialization = preContextInitialization;
+        _initializationLocked = true;
     }
 }

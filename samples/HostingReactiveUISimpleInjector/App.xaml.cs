@@ -1,6 +1,7 @@
 ﻿using System.Reactive.Concurrency;
 using System.Windows;
 using HostingReactiveUISimpleInjector.Locator;
+using Microsoft.Extensions.Hosting.Wpf;
 using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Hosting.Wpf.Locator;
 using Microsoft.Extensions.Logging;
@@ -19,13 +20,18 @@ namespace HostingReactiveUISimpleInjector
         {
             //!!It's important to have an parametless constructor because app.g.cs is auto-generating own Main that requires a parametless constructor.
             //We cannot disable this behaviour but we can trick it.
-            //Its also important to have  the constructor PRIVATE if you are injecting something in App like below
-            //Otherwise the activator will use parametless constructor to create instance and not the one with services
+            //Its also important to have  the constructor PRIVATE if you are injecting something in App like below i.e. having multiple constructors.
+            //Otherwise the activator will use parametless constructor to create the instance and not the one with services.
+
+            //A diagnostic method that will check for invalid constructor configuration
+            //It will throw and error in case if you have multiple constructor and you don't have a private parametless constructor
+            this.CheckForInvalidConstructorConfiguration();
         }
 
         //Example that we can even inject logging here
         public App(ILogger<App> logger)
         {
+            this.CheckForInvalidConstructorConfiguration();
             _logger = logger;
         }
 

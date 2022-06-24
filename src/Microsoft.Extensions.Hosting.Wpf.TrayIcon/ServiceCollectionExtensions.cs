@@ -29,4 +29,23 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>
+    /// Adds tray icon functionality for WPF application.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+    /// <param name="createTray">The function used to create <see cref="ITrayIcon" /></param>
+    /// <typeparam name="TTrayIcon">Implementation of <see cref="ITrayIcon" />.</typeparam>
+    /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddWpfTrayIcon<TTrayIcon>(this IServiceCollection services, Func<IServiceProvider, TTrayIcon> createTray)
+        where TTrayIcon : class, ITrayIcon
+    {
+        services.AddSingleton<Func<IWpfComponent>>(provider =>
+        {
+            //Rare case when someone needs to resolve ITrayIcon implementation manually, or maybe not from the IServiceProvider but another container.
+            return () => createTray(provider);
+        });
+
+        return services;
+    }
 }

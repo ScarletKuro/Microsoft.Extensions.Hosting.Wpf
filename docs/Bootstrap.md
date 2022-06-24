@@ -42,12 +42,11 @@ public class RootBoot : IBootstrap<Container>
 public static void Main(string[] args)
 {
 	using var container = RootBoot.CreateContainer(); // <-- new line
-	using var viewModelContainer = new SimpleInjectorViewModelContainer(container);
 	using IHost host = CreateHostBuilder(container, args)
 		.Build()
 		.UseSimpleInjector(container) // <-- new line(specific to SimpleInjector)
 		.UseWpfContainerBootstrap(container) // <-- new line
-		.UseWpfViewModelLocator<App, ViewModelLocator>(viewModelContainer);
+		.UseWpfViewModelLocator<App, ViewModelLocator>(new ViewModelLocator(container));
 	host.Run();
 }
 

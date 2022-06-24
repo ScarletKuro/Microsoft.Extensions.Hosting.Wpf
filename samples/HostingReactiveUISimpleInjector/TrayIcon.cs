@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Reflection;
 using System.Windows.Forms;
 using HostingReactiveUISimpleInjector.Properties;
 using Microsoft.Extensions.Hosting.Wpf.Core;
@@ -16,9 +15,9 @@ namespace HostingReactiveUISimpleInjector
         private ToolStripMenuItem? _versionItem;
         private IContainer? _components;
 
-        public IWpfThread<App> WpfThread { get; }
+        public IWpfThread WpfThread { get; }
 
-        public TrayIcon(IWpfThread<App> wpfThread)
+        public TrayIcon(IWpfThread wpfThread)
         {
             WpfThread = wpfThread;
         }
@@ -44,7 +43,6 @@ namespace HostingReactiveUISimpleInjector
 
             // Create the NotifyIcon.
             _notifyIcon = new NotifyIcon(_components);
-            _notifyIcon.MouseClick += NotifyIconOnMouseClick;
 
             // The Icon property sets the icon that will appear
             // in the systray for this application.
@@ -58,16 +56,6 @@ namespace HostingReactiveUISimpleInjector
             // in a tooltip, when the mouse hovers over the systray icon.
             _notifyIcon.Text = $@"{Application.ProductVersion}";
             _notifyIcon.Visible = true;
-        }
-
-
-        private void NotifyIconOnMouseClick(object? sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-            {
-                MethodInfo? oMethodInfo = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
-                oMethodInfo?.Invoke(_notifyIcon, null);
-            }
         }
 
         private void ExitItemOnClick(object? sender, EventArgs e)
@@ -86,12 +74,7 @@ namespace HostingReactiveUISimpleInjector
         {
             if (disposing)
             {
-                if (_notifyIcon is not null)
-                {
-                    _notifyIcon.MouseClick -= NotifyIconOnMouseClick;
-                    _notifyIcon.Dispose();
-                }
-
+                _notifyIcon?.Dispose();
                 _versionItem?.Dispose();
                 _contextMenu?.Dispose();
                 _exitItem?.Dispose();

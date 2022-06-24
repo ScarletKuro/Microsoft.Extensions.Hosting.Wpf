@@ -8,7 +8,7 @@ namespace HostingSimple
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application, IViewModelLocatorInitialization<ViewModelLocator>, IApplicationInitializeComponent
+    public partial class App : Application, IViewModelLocatorInitialization<IViewModelLocator>, IApplicationInitializeComponent
     {
         public void Initialize()
         {
@@ -16,7 +16,7 @@ namespace HostingSimple
             //In this example it's empty as we do not have anything to initialize like ReactiveUI
         }
 
-        public void InitializeLocator(ViewModelLocator viewModelLocator)
+        public void InitializeLocator(IViewModelLocator viewModelLocator)
         {
             //We need to set it so that our <locator:ViewModelLocatorHost x:Key="Locator"/> could resolve ViewModels for DataContext
             //You can also use it as service locator pattern, but I personally recommend you to use it only inside View xaml to bind the DataContext

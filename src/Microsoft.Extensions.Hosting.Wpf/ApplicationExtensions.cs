@@ -4,8 +4,34 @@ using System.Windows;
 
 namespace Microsoft.Extensions.Hosting.Wpf;
 
-internal static class ApplicationExtensions
+public static class ApplicationExtensions
 {
+    /// <summary>
+    /// This method checks if constructors are configured incorrectly.
+    /// </summary>
+    /// <param name="application">WPF <see cref="Application" />.</param>
+    /// <exception cref="InvalidOperationException">Throws exception if something was configured incorrectly.</exception>
+    public static void CheckForInvalidConstructorConfiguration(this Application application)
+    {
+        var applicationType = application.GetType();
+        var constructors = applicationType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        //We only care when there are more than one constructor.
+        if (constructors.Length > 1)
+        {
+            foreach (var constructor in constructors)
+            {
+                var parameters = constructor.GetParameters();
+                if (parameters.Length == 0)
+                {
+                    if (!constructor.IsPrivate)
+                    {
+                        throw new InvalidOperationException($"You need to have a paramtless PRIVATE constructor if you have multiple constructor in {applicationType.FullName}.");
+                    }
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Checks if WPF application is already shutdown.
     /// </summary>

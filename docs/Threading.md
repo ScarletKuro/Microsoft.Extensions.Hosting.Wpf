@@ -6,14 +6,14 @@ This can be really useful when using WPF inside `Microsoft.Extensions.Hosting` s
 ## Getting Started
 
 ### Install nuget
-```Install-Package Extensions.Hosting.Wpf```
+```Install-Package Extensions.Hosting.Wpf.Threading```
 
 ### Register service
 ```CSharp
 private static void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services)
 {
     services.AddWpf<App>();
-    services.AddThreadSwitching<App>(); //<--- new line
+    services.AddThreadSwitching(); //<--- new line
 }
 ```
 

@@ -51,6 +51,29 @@ public static class WpfHostingExtensions
     /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{TViewModelLocator}"/>
     /// </summary>
     /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+    /// <param name="host">The <see cref="IHostBuilder" /> to configure.</param>
+    /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+    public static IHost UseWpfInitialization<TApplication>(this IHost host)
+        where TApplication : Application, IApplicationInitializeComponent, IApplicationInitialize
+    {
+        if (host is null)
+        {
+            throw new ArgumentNullException(nameof(host));
+        }
+
+        WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
+        wpfThread.SetPreContextInitialization(context =>
+        {
+            context.WpfApplication?.Initialize();
+        });
+
+        return host;
+    }
+
+    /// <summary>
+    /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{TViewModelLocator}"/>
+    /// </summary>
+    /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
     /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
     /// <param name="host">The <see cref="IHostBuilder" /> to configure.</param>
     /// <param name="viewModelLocator">Instance of <see cref="TViewModelLocator"/></param>

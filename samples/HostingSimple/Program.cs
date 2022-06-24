@@ -16,7 +16,7 @@ namespace HostingSimple
         {
             using IHost host = CreateHostBuilder(args)
                 .Build()
-                .UseWpfViewModelLocator<App, ViewModelLocator>(provider => new ViewModelLocator(provider));
+                .UseWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider));
             host.Run();
         }
 

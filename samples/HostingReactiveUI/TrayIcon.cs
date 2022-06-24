@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Reflection;
 using System.Windows.Forms;
 using HostingReactiveUI.Properties;
 using Microsoft.Extensions.Hosting.Wpf.Core;
@@ -44,7 +43,6 @@ namespace HostingReactiveUI
 
             // Create the NotifyIcon.
             _notifyIcon = new NotifyIcon(_components);
-            _notifyIcon.MouseClick += NotifyIconOnMouseClick;
 
             // The Icon property sets the icon that will appear
             // in the systray for this application.
@@ -60,15 +58,6 @@ namespace HostingReactiveUI
             _notifyIcon.Visible = true;
         }
 
-
-        private void NotifyIconOnMouseClick(object? sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Left)
-            {
-                MethodInfo? oMethodInfo = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
-                oMethodInfo?.Invoke(_notifyIcon, null);
-            }
-        }
 
         private void ExitItemOnClick(object? sender, EventArgs e)
         {
@@ -86,12 +75,7 @@ namespace HostingReactiveUI
         {
             if (disposing)
             {
-                if (_notifyIcon is not null)
-                {
-                    _notifyIcon.MouseClick -= NotifyIconOnMouseClick;
-                    _notifyIcon.Dispose();
-                }
-
+                _notifyIcon?.Dispose();
                 _versionItem?.Dispose();
                 _contextMenu?.Dispose();
                 _exitItem?.Dispose();
