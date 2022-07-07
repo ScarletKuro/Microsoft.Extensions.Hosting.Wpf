@@ -24,7 +24,7 @@ private readonly JoinableTaskFactory _joinableTaskFactory;
 
 public SomeConstructor(JoinableTaskFactory joinableTaskFactory)
 {
-    _joinableTaskFactory = joinableTaskFactory
+    _joinableTaskFactory = joinableTaskFactory;
 }
 
 private async Task SomeOperationAsync() {
