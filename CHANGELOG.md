@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [3.1.0] - 2023-01-26
+#### Added
+- Add net7.0 support.
+
+### Changed
+- Update `Microsoft.Extensions.Hosting` from 5.0.0 to 6.0.0 to avoid vulnerability warnings.
+
 ## [3.0.0] - 2022-06-24
 ### Removed
 - Remove `IViewModelContainer`.
@@ -42,7 +49,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 #### Added
 - First release.
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..3.0.0
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..3.1.0
+[3.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.0.0..3.1.0
 [3.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/2.0.0..3.0.0
 [2.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/1.0.0..2.0.0
 [1.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/commits/1.0.0
