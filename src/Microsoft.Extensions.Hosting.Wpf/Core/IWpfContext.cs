@@ -12,7 +12,7 @@ public interface IWpfContext
     bool IsLifetimeLinked { get; internal set; }
 
     /// <summary>
-    /// Shows if WPF is running inside Microsoft.Extensions.Hosting
+    /// Shows if WPF is running inside <see cref="Microsoft.Extensions.Hosting"/>
     /// </summary>
     bool IsRunning { get; internal set; }
 

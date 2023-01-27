@@ -46,11 +46,20 @@ public class WpfLifetime : IHostLifetime, IDisposable
         IOptions<HostOptions> hostOptions,
         ILoggerFactory loggerFactory)
     {
-        WpfContext = wpfContext ?? throw new ArgumentNullException(nameof(wpfContext));
-        Options = options.Value ?? throw new ArgumentNullException(nameof(options));
-        Environment = environment ?? throw new ArgumentNullException(nameof(environment));
-        ApplicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
-        HostOptions = hostOptions.Value ?? throw new ArgumentNullException(nameof(hostOptions));
+        ThrowHelper.ThrowIfNull(wpfContext, nameof(wpfContext));
+        ThrowHelper.ThrowIfNull(options, nameof(options));
+        ThrowHelper.ThrowIfNull(options.Value, nameof(options));
+        ThrowHelper.ThrowIfNull(applicationLifetime);
+        ThrowHelper.ThrowIfNull(environment);
+        ThrowHelper.ThrowIfNull(hostOptions, nameof(hostOptions));
+        ThrowHelper.ThrowIfNull(hostOptions.Value, nameof(hostOptions));
+        ThrowHelper.ThrowIfNull(loggerFactory);
+
+        WpfContext = wpfContext;
+        Options = options.Value;
+        Environment = environment;
+        ApplicationLifetime = applicationLifetime;
+        HostOptions = hostOptions.Value;
         Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
     }
 
@@ -86,44 +95,38 @@ public class WpfLifetime : IHostLifetime, IDisposable
     {
         if (!Options.SuppressStatusMessages)
         {
-            Logger.LogInformation("Wpf application started");
-            Logger.LogInformation("Lifetime: {Lifetime}", nameof(WpfLifetime));
-            Logger.LogInformation("Hosting environment: {EnvName}", Environment.EnvironmentName);
-            Logger.LogInformation("Content root path: {ContentRoot}", Environment.ContentRootPath);
+            Logger.WpfApplicationStarted();
+            Logger.LifeTime(nameof(WpfLifetime));
+            Logger.HostingEnvironment(Environment.EnvironmentName);
+            Logger.ContentRootPath(Environment.ContentRootPath);
         }
         //Hookup here because WpfApplication is initialized only when WpfHostedService is up
-        if (WpfContext.WpfApplication is not null)
+        //Make sure to do it only on Main UI thread because it have VerifyAccess()
+        WpfContext.WpfApplication?.InvokeIfRequired(() =>
         {
-            //Make sure to do it only on Main UI thread because it have VerifyAccess()
-            WpfContext.WpfApplication.InvokeIfRequired(() =>
-            {
-                WpfContext.WpfApplication.Exit += OnWpfExiting;
-            });
-        }
+            WpfContext.WpfApplication.Exit += OnWpfExiting;
+        });
     }
 
     private void OnApplicationStopping()
     {
         if (!Options.SuppressStatusMessages)
         {
-            Logger.LogInformation("Wpf application is shutting down...");
+            Logger.WpfApplicationShuttingDown();
         }
 
-        if (WpfContext.WpfApplication is not null)
+        //Make sure to do it only on Main UI thread because it have VerifyAccess()
+        WpfContext.WpfApplication?.InvokeIfRequired(() =>
         {
-            //Make sure to do it only on Main UI thread because it have VerifyAccess()
-            WpfContext.WpfApplication.InvokeIfRequired(() =>
-            {
-                WpfContext.WpfApplication.Exit -= OnWpfExiting;
-            });
-        }
+            WpfContext.WpfApplication.Exit -= OnWpfExiting;
+        });
     }
 
     private void OnWpfApplicationStopped()
     {
         if (!Options.SuppressStatusMessages)
         {
-            Logger.LogInformation("Wpf application was stopped.");
+            Logger.WpfApplicationStopped();
         }
     }
 
@@ -132,7 +135,7 @@ public class WpfLifetime : IHostLifetime, IDisposable
         ApplicationLifetime.StopApplication();
         if (!_shutdownBlock.WaitOne(HostOptions.ShutdownTimeout))
         {
-            Logger.LogInformation("Waiting for the host to be disposed, please ensure all 'IHost' instances are wrapped in 'using' blocks");
+            Logger.WaitingHost();
         }
 
         _shutdownBlock.WaitOne();
@@ -149,12 +152,21 @@ public class WpfLifetime : IHostLifetime, IDisposable
 
     public void Dispose()
     {
-        _shutdownBlock.Set();
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-        AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _shutdownBlock.Set();
 
-        _applicationStartedRegistration.Dispose();
-        _applicationStoppingRegistration.Dispose();
-        _applicationStoppedRegistration.Dispose();
+            AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+
+            _applicationStartedRegistration.Dispose();
+            _applicationStoppingRegistration.Dispose();
+            _applicationStoppedRegistration.Dispose();
+        }
     }
 }

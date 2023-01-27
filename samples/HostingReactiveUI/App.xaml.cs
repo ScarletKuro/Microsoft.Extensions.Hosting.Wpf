@@ -52,7 +52,7 @@ namespace HostingReactiveUI
             //We need to set it so that our <locator:ViewModelLocatorHost x:Key="Locator"/> could resolve ViewModels for DataContext
             //You can also use it as service locator pattern, but I personally recommend you to use it only inside View xaml to bind the DataContext
             var viewModelLocatorHost = ViewModelLocatorHost.GetInstance(this);
-            viewModelLocatorHost?.SetViewModelLocator(viewModelLocator);
+            viewModelLocatorHost.SetViewModelLocator(viewModelLocator);
         }
     }
 }

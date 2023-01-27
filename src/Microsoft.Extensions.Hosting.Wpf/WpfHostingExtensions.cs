@@ -19,10 +19,7 @@ public static class WpfHostingExtensions
     /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
     public static IHostBuilder UseWpfLifetime(this IHostBuilder hostBuilder, Action<WpfLifeTimeOptions> configureOptions)
     {
-        if (hostBuilder is null)
-        {
-            throw new ArgumentNullException(nameof(hostBuilder));
-        }
+        ThrowHelper.ThrowIfNull(hostBuilder, nameof(hostBuilder));
 
         return hostBuilder.ConfigureServices((_, collection) =>
         {
@@ -39,10 +36,7 @@ public static class WpfHostingExtensions
     /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
     public static IHostBuilder UseWpfLifetime(this IHostBuilder hostBuilder)
     {
-        if (hostBuilder is null)
-        {
-            throw new ArgumentNullException(nameof(hostBuilder));
-        }
+        ThrowHelper.ThrowIfNull(hostBuilder, nameof(hostBuilder));
 
         return hostBuilder.ConfigureServices((_, collection) => collection.AddSingleton<IHostLifetime, WpfLifetime>());
     }
@@ -56,10 +50,7 @@ public static class WpfHostingExtensions
     public static IHost UseWpfInitialization<TApplication>(this IHost host)
         where TApplication : Application, IApplicationInitializeComponent, IApplicationInitialize
     {
-        if (host is null)
-        {
-            throw new ArgumentNullException(nameof(host));
-        }
+        ThrowHelper.ThrowIfNull(host, nameof(host));
 
         WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
         wpfThread.SetPreContextInitialization(context =>
@@ -81,10 +72,7 @@ public static class WpfHostingExtensions
     public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost host, TViewModelLocator viewModelLocator)
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
-        if (host is null)
-        {
-            throw new ArgumentNullException(nameof(host));
-        }
+        ThrowHelper.ThrowIfNull(host, nameof(host));
 
         WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
         wpfThread.SetPreContextInitialization(context=>
@@ -107,10 +95,7 @@ public static class WpfHostingExtensions
     public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost host, Func<IServiceProvider, TViewModelLocator> viewModelLocatorFunc)
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
-        if (host is null)
-        {
-            throw new ArgumentNullException(nameof(host));
-        }
+        ThrowHelper.ThrowIfNull(host, nameof(host));
 
         WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
         wpfThread.SetPreContextInitialization(context =>

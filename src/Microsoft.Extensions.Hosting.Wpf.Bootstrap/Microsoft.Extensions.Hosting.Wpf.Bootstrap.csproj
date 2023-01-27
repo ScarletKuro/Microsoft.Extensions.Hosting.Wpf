@@ -7,6 +7,12 @@
   </PropertyGroup>
   
   <PropertyGroup>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+  
+  <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Authors>ScarletKuro</Authors>
     <Description>A small helper to bootstrap 3rd party DI containers for Extensions.Hosting.Wpf</Description>

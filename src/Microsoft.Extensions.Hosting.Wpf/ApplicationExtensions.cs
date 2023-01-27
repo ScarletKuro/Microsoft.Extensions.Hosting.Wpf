@@ -13,6 +13,8 @@ public static class ApplicationExtensions
     /// <exception cref="InvalidOperationException">Throws exception if something was configured incorrectly.</exception>
     public static void CheckForInvalidConstructorConfiguration(this Application application)
     {
+        ThrowHelper.ThrowIfNull(application, nameof(application));
+
         var applicationType = application.GetType();
         var constructors = applicationType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         //We only care when there are more than one constructor.
@@ -20,12 +22,12 @@ public static class ApplicationExtensions
         {
             foreach (var constructor in constructors)
             {
-                var parameters = constructor.GetParameters();
+                ParameterInfo[] parameters = constructor.GetParameters();
                 if (parameters.Length == 0)
                 {
                     if (!constructor.IsPrivate)
                     {
-                        throw new InvalidOperationException($"You need to have a paramtless PRIVATE constructor if you have multiple constructor in {applicationType.FullName}.");
+                        throw new InvalidOperationException($"You need to have a parameter-less PRIVATE constructor if you have multiple constructor in {applicationType.FullName}.");
                     }
                 }
             }

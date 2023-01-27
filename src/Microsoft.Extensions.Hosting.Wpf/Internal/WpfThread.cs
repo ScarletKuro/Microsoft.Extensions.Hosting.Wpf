@@ -136,6 +136,7 @@ internal class WpfThread<TApplication>
     private TApplication CreateApplication()
     {
         var applicationFunction = _serviceProvider.GetRequiredService<Func<TApplication>>();
+
         return applicationFunction.Invoke();
     }
 
@@ -148,6 +149,7 @@ internal class WpfThread<TApplication>
         {
             throw new InvalidOperationException($"Do not use .UseWpfInitialization<{typeof(TApplication).Name}> and .UseWpfViewModelLocator<{typeof(TApplication).Name}> together or call them multiple times.");
         }
+
         _preContextInitialization = preContextInitialization;
         _initializationLocked = true;
     }

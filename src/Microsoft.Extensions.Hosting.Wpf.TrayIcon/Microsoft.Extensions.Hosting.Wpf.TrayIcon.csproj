@@ -7,6 +7,12 @@
   </PropertyGroup>
   
   <PropertyGroup>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+  
+  <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Authors>ScarletKuro</Authors>
     <Description>Adds tray icon for Extensions.Hosting.Wpf</Description>
