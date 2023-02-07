@@ -57,7 +57,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - First release.
 
 [Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..3.2.0
-[3.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.1.0..3.2.0
+[3.2.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.1.0..3.2.0
 [3.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.0.0..3.1.0
 [3.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/2.0.0..3.0.0
 [2.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/1.0.0..2.0.0
