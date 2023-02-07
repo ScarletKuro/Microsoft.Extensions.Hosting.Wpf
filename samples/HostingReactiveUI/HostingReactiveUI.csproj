@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-	<StartupObject>HostingReactiveUI.Program</StartupObject>
+    <StartupObject>HostingReactiveUI.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,8 +5,8 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-	<StartupObject>HostingReactiveUISimpleInjector.Program</StartupObject>
-	<Nullable>enable</Nullable>
+    <StartupObject>HostingReactiveUISimpleInjector.Program</StartupObject>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
