@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [3.2.0] - 2023-02-07
+#### Added
+- More `GetInstance` overloads in `AbstractViewModelLocatorHost`.
+
+### Removed
+- Remove `UseWindowsForms` from `Microsoft.Extensions.Hosting`.
+
 ## [3.1.0] - 2023-01-26
 #### Added
 - Add net7.0 support.
@@ -49,7 +56,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 #### Added
 - First release.
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..3.1.0
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..3.2.0
+[3.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.1.0..3.2.0
 [3.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.0.0..3.1.0
 [3.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/2.0.0..3.0.0
 [2.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/1.0.0..2.0.0
