@@ -11,6 +11,32 @@ public class AbstractViewModelLocatorHost<TViewModelLocator>
 
     /// <summary>
     /// Searches in <see cref="ResourceDictionary"/> for <see cref="AbstractViewModelLocatorHost{TViewModelLocator}"/>.
+    /// Uses Application.Current as <see cref="Application" /> instance.
+    /// </summary>
+    /// <param name="skipMergedDictionaries">If <b>True</b> skips to lookup in ResourceDictionary.MergedDictionaries for performance purpose.If <b>True</b> skips to lookup in ResourceDictionary.MergedDictionaries for performance purpose.</param>
+    /// <exception cref="InvalidOperationException">Throws if <see cref="AbstractViewModelLocatorHost{TViewModelLocator}"/> is not found in resource.</exception>
+#pragma warning disable CA1000
+    public static AbstractViewModelLocatorHost<TViewModelLocator> GetInstance(bool skipMergedDictionaries = false)
+#pragma warning restore CA1000
+    {
+        return GetInstance(Application.Current, skipMergedDictionaries);
+    }
+
+    /// <summary>
+    /// Searches in <see cref="ResourceDictionary"/> for <see cref="AbstractViewModelLocatorHost{TViewModelLocator}"/>.
+    /// Uses Application.Current as <see cref="Application" /> instance.
+    /// </summary>
+    /// <param name="locatorName">Key in ResourceDictionary.</param>
+    /// <exception cref="InvalidOperationException">Throws if <see cref="AbstractViewModelLocatorHost{TViewModelLocator}"/> is not found in resource.</exception>
+#pragma warning disable CA1000
+    public static AbstractViewModelLocatorHost<TViewModelLocator> GetInstance(string locatorName)
+#pragma warning restore CA1000
+    {
+        return GetInstance(Application.Current, locatorName);
+    }
+
+    /// <summary>
+    /// Searches in <see cref="ResourceDictionary"/> for <see cref="AbstractViewModelLocatorHost{TViewModelLocator}"/>.
     /// </summary>
     /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
     /// <param name="applicationInstance">Instance of <see cref="Application" />.</param>
