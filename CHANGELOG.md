@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - More `GetInstance` overloads in `AbstractViewModelLocatorHost`.
 
 ### Changed
-- Make `AbstractViewModelLocatorHost.GetInstance` non nullable and throw is locator is not found.
+- Make `AbstractViewModelLocatorHost.GetInstance` non nullable and throw if locator is not found.
 - Use SourceGenerator for Logging (LoggerMessage).
 
 ### Removed
