@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 /// </summary>
 /// <remarks>This type is only used inside the library.</remarks>
 /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
-internal class WpfThread<TApplication>
+internal sealed class WpfThread<TApplication>
     : IWpfThread<TApplication> where TApplication : Application, IApplicationInitializeComponent
 {
     private readonly IServiceProvider _serviceProvider;

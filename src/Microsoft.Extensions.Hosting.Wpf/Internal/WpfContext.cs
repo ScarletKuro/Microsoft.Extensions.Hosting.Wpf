@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 /// </summary>
 /// <remarks>This type is only used inside the library.</remarks>
 /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
-internal class WpfContext<TApplication>
+internal sealed class WpfContext<TApplication>
     : IWpfContext<TApplication> where TApplication : Application
 {
     private TApplication? _wpfApplication;

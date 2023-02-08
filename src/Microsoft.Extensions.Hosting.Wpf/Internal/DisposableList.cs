@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 
-internal class DisposableList<T> : IDisposable
+internal sealed class DisposableList<T> : IDisposable
 {
     private readonly List<IDisposable> _disposables = new();
 
