@@ -11,7 +11,9 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
 public class WpfLifetime : IHostLifetime, IDisposable
 {
+#pragma warning disable CA2213
     private readonly ManualResetEvent _shutdownBlock = new(false);
+#pragma warning restore CA2213
     private CancellationTokenRegistration _applicationStartedRegistration;
     private CancellationTokenRegistration _applicationStoppingRegistration;
     private CancellationTokenRegistration _applicationStoppedRegistration;
@@ -138,7 +140,8 @@ public class WpfLifetime : IHostLifetime, IDisposable
             Logger.WaitingHost();
         }
 
-        _shutdownBlock.WaitOne();
+        // wait one more time after the above log message, but only for ShutdownTimeout, so it doesn't hang forever
+        _shutdownBlock.WaitOne(HostOptions.ShutdownTimeout);
 
         // On Linux if the shutdown is triggered by SIGTERM then that's signaled with the 143 exit code.
         // Suppress that since we shut down gracefully. https://github.com/aspnet/AspNetCore/issues/6526
