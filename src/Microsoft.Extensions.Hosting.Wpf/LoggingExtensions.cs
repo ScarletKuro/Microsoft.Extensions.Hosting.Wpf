@@ -4,13 +4,13 @@ namespace Microsoft.Extensions.Hosting.Wpf;
 
 internal static partial class LoggingExtensions
 {
-    [LoggerMessage(0, LogLevel.Information, "Starting WPF application: {name}.")]
-    internal static partial void WpfStarting(this ILogger logger, string name);
+    [LoggerMessage(0, LogLevel.Information, "Starting WPF application")]
+    internal static partial void WpfStarting(this ILogger logger);
 
-    [LoggerMessage(1, LogLevel.Information, "WPF thread started.")]
+    [LoggerMessage(1, LogLevel.Information, "WPF thread started")]
     internal static partial void WpfThreadStarted(this ILogger logger);
 
-    [LoggerMessage(2, LogLevel.Information, "Stopping WPF with Application.Shutdown() due to application exit.")]
+    [LoggerMessage(2, LogLevel.Information, "Stopping WPF with Application.Shutdown() due to application exit")]
     internal static partial void WpfStopping(this ILogger logger);
 
     [LoggerMessage(3, LogLevel.Information, "WPF application started")]
@@ -19,7 +19,7 @@ internal static partial class LoggingExtensions
     [LoggerMessage(4, LogLevel.Information, "WPF application is shutting down...")]
     internal static partial void WpfApplicationShuttingDown(this ILogger logger);
 
-    [LoggerMessage(5, LogLevel.Information, "WPF application was stopped.")]
+    [LoggerMessage(5, LogLevel.Information, "WPF application was stopped")]
     internal static partial void WpfApplicationStopped(this ILogger logger);
 
     [LoggerMessage(6, LogLevel.Information, "Waiting for the host to be disposed, please ensure all 'IHost' instances are wrapped in 'using' blocks")]

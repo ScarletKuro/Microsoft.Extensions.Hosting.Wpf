@@ -34,7 +34,7 @@ public class WpfHostedService<TApplication>
             return Task.CompletedTask;
         }
 
-        _logger.WpfStarting(nameof(WpfHostedService<TApplication>));
+        _logger.WpfStarting();
         // Make the UI thread go
         _wpfThread.Start();
         _logger.WpfThreadStarted();
