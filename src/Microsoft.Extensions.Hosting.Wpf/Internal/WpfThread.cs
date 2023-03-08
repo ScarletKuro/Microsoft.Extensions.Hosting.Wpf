@@ -12,7 +12,6 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 /// </summary>
 /// <remarks>This type is only used inside the library.</remarks>
 /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA1812:Avoid uninstantiated internal classes", Justification = "")]
 internal sealed class WpfThread<TApplication>
     : IWpfThread<TApplication> where TApplication : Application, IApplicationInitializeComponent
 {

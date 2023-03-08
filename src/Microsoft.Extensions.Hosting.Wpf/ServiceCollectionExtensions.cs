@@ -59,7 +59,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IWpfContext>(wpfContext);
 
         //Register WpfThread
-        services.TryAddSingleton<WpfThread<TApplication>>();  //for internal usage only
+        services.TryAddSingleton<WpfThread<TApplication>>(s => new WpfThread<TApplication>(s, wpfContext));  //for internal usage only
         services.TryAddSingleton<IWpfThread<TApplication>>(s => s.GetRequiredService<WpfThread<TApplication>>());
         services.TryAddSingleton<IWpfThread>(s => s.GetRequiredService<WpfThread<TApplication>>());
 
