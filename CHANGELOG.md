@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [3.3.0] - 2023-03-08
+#### Added
+- Support for .NET Framework 4.6.2 and .NET Framework 4.8.
+
+### Changed
+- Update `Microsoft.VisualStudio.Threading` to 17.5.22 in `Microsoft.Extensions.Hosting.Threading`.
+- Minor change to logging output.
+
 ## [3.2.0] - 2023-02-07
 #### Added
 - More `GetInstance` overloads in `AbstractViewModelLocatorHost`.
@@ -50,8 +58,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [2.0.0] - 2022-06-08
 ### Removed
 - Remove Boostrap from `Microsoft.Extensions.Hosting.Wpf`.
+
 #### Added
 - Add `Microsoft.Extensions.Hosting.Wpf.Bootstrap` library.
+
 ### Changed
 - Update `Microsoft.VisualStudio.Threading` to 17.2.32 in `Microsoft.Extensions.Hosting.Threading`.
 - Add `skipMergedDictionaries` parameter in `AbstractViewModelLocatorHost.GetInstance`.
@@ -61,6 +71,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - First release.
 
 [Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..3.2.0
+[3.3.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.2.0..3.3.0
 [3.2.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.1.0..3.2.0
 [3.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.0.0..3.1.0
 [3.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/2.0.0..3.0.0
