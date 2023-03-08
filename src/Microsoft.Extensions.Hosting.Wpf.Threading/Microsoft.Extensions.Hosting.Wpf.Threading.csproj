@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net4.6.2;net4.8;netcoreapp3.1;net6.0-windows;net7.0-windows</TargetFrameworks>
-	<!-- Required to explicitly set for.NET Framework -->
+    <!-- Required to explicitly set for.NET Framework -->
     <UseWPF>true</UseWPF>
   </PropertyGroup>
   
