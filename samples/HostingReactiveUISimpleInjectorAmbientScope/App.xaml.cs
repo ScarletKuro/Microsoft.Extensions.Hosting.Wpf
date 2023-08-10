@@ -3,21 +3,24 @@ using System.Reactive.Concurrency;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using HostingReactiveUISimpleInjectorFlowingScope.Context;
-using HostingReactiveUISimpleInjectorFlowingScope.Service;
+using HostingReactiveUISimpleInjectorAmbientScope.Context;
+using HostingReactiveUISimpleInjectorAmbientScope.Locator;
+using HostingReactiveUISimpleInjectorAmbientScope.Service;
 using Microsoft.Extensions.Hosting.Wpf;
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.Extensions.Hosting.Wpf.Locator;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Threading;
 using ReactiveUI;
 using SimpleInjector;
+using SimpleInjector.Lifestyles;
 
-namespace HostingReactiveUISimpleInjectorFlowingScope
+namespace HostingReactiveUISimpleInjectorAmbientScope
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application, IApplicationInitialize, IApplicationInitializeComponent
+    public partial class App : Application, IViewModelLocatorInitialization<ViewModelLocator>, IApplicationInitializeComponent
     {
         private readonly ILogger<App> _logger;
         private readonly Container _container;
@@ -63,6 +66,21 @@ namespace HostingReactiveUISimpleInjectorFlowingScope
             _ = new Timer(state => SimulateRequest(state, _container), null, TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(-1));
         }
 
+        public void InitializeLocator(ViewModelLocator viewModelLocator)
+        {
+            //This is not really correct(in terms of SimpleInjector philosophy, but correct for ReactiveUI), as we doing Verify after the first resolve
+            //Verify was earlier in the end of RootBoot, but turns out this will kill ReactiveCommand(>14.1.1 version) scheduling
+            //because Verify would resolve the ViewModels once(for check) on non UI thread making Splat to initialize on wrong scheduler(NB! above code line fixes it).
+            //As workaround we performing verify on UI thread.
+            //NB! Even though the first lines fixes the problem and we can move Verify to normal place and some changes in ReactiveCommand are rolled back now, I don't want to risk it since sometimes ReactiveUI does some breaking changes.
+            viewModelLocator.Container.Verify(); //Calls SimpleInjector verify https://docs.simpleinjector.org/en/latest/howto.html#verify-configuration
+
+            //We need to set it so that our <locator:ViewModelLocatorHost x:Key="Locator"/> could resolve ViewModels for DataContext
+            //You can also use it as service locator pattern, but I personally recommend you to use it only inside View xaml to bind the DataContext
+            var viewModelLocatorHost = ViewModelLocatorHost.GetInstance(this);
+            viewModelLocatorHost.SetViewModelLocator(viewModelLocator);
+        }
+
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD101:Avoid unsupported async delegates", Justification = "Suppressing it here since im using async body in parallel for testing purpose")]
         private void SimulateRequest(object? state, Container container)
@@ -72,13 +90,15 @@ namespace HostingReactiveUISimpleInjectorFlowingScope
             Parallel.For(1, 5, async number =>
             // ReSharper restore AsyncVoidLambda
             {
-                await using Scope scope = new Scope(container);
-                var joinableTaskFactory = scope.GetInstance<JoinableTaskFactory>();
-                var context = scope.GetInstance<GuidContext>();
-                var windowService = scope.GetInstance<WindowService>();
-                context.SetId(Guid.NewGuid()); //set unique id for the virtual request
-                await joinableTaskFactory.SwitchToMainThreadAsync();
-                windowService.OpenMainWindow();
+                await using (AsyncScopedLifestyle.BeginScope(container))
+                {
+                    var joinableTaskFactory = container.GetInstance<JoinableTaskFactory>();
+                    var context = container.GetInstance<GuidContext>();
+                    var windowService = container.GetInstance<WindowService>();
+                    context.SetId(Guid.NewGuid()); //set unique id for the virtual request
+                    await joinableTaskFactory.SwitchToMainThreadAsync();
+                    windowService.OpenMainWindow();
+                }
             });
         }
     }

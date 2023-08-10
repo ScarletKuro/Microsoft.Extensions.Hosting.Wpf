@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{2766
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Hosting.Wpf.TrayIcon", "..\src\Microsoft.Extensions.Hosting.Wpf.TrayIcon\Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj", "{BF0EBD31-A742-4295-B2B2-F034B344856A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostingReactiveUISimpleInjectorAmbientScope", "HostingReactiveUISimpleInjectorAmbientScope\HostingReactiveUISimpleInjectorAmbientScope.csproj", "{E689314F-3923-4F3D-9C76-C8ECBA0161A3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,6 +61,10 @@ Global
 		{BF0EBD31-A742-4295-B2B2-F034B344856A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF0EBD31-A742-4295-B2B2-F034B344856A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF0EBD31-A742-4295-B2B2-F034B344856A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E689314F-3923-4F3D-9C76-C8ECBA0161A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E689314F-3923-4F3D-9C76-C8ECBA0161A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E689314F-3923-4F3D-9C76-C8ECBA0161A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E689314F-3923-4F3D-9C76-C8ECBA0161A3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
