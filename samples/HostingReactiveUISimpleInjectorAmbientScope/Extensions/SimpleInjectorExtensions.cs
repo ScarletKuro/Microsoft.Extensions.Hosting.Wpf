@@ -11,6 +11,7 @@ namespace HostingReactiveUISimpleInjectorAmbientScope.Extensions
             RegisterScopeDisposableTransient<TImplementation, TImplementation>(container);
         }
 
+        // https://docs.simpleinjector.org/en/latest/disposabletransientcomponent.html
         public static void RegisterScopeDisposableTransient<TService, TImplementation>(this Container container) where TImplementation : class, IDisposable, TService where TService : class
         {
             ScopedLifestyle lifestyle = Lifestyle.Scoped;
