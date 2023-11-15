@@ -45,7 +45,7 @@ public class WpfHostedService<TApplication>
     /// <inheritdoc />
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (_wpfContext is { IsRunning: true, WpfApplication: { } })
+        if (_wpfContext is { IsRunning: true, WpfApplication: not null })
         {
             //If true means that WPF is already shutdown internally. Usually happens when ShutdownMode is set to OnLastWindowClose or OnMainWindowClose
             //We need to check otherwise if we call Shutdown twice we get an exception
