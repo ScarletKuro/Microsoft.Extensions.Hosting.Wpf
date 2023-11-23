@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [3.4.0] - 2023-11-24
+#### Added
+- Add net8-windows explicitly.
+
 ## [3.3.0] - 2023-03-08
 #### Added
 - Support for .NET Framework 4.6.2 and .NET Framework 4.8.
@@ -70,7 +74,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 #### Added
 - First release.
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..3.2.0
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..3.4.0
+[3.4.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.3.0..3.4.0
 [3.3.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.2.0..3.3.0
 [3.2.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.1.0..3.2.0
 [3.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.0.0..3.1.0
