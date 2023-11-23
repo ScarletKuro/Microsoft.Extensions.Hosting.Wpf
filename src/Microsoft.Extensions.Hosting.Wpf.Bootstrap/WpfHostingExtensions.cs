@@ -15,10 +15,7 @@ public static class WpfHostingExtensions
     public static IHost UseWpfContainerBootstrap<TContainer>(this IHost host, TContainer container)
         where TContainer : class
     {
-        if (host is null)
-        {
-            throw new ArgumentNullException(nameof(host));
-        }
+        ThrowHelper.ThrowIfNull(host, nameof(host));
 
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
         var bootstraps = host.Services.GetServices<IBootstrap<TContainer>>();
