@@ -43,7 +43,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <InternalsVisibleTo Include="Extensions.Hosting.Wpf.Bootstrap" />
+    <InternalsVisibleTo Include="Extensions.Hosting.Wpf.Bootstrap, PublicKey=$(AssemblySignPublicKey)" />
   </ItemGroup>
   
   <ItemGroup>
