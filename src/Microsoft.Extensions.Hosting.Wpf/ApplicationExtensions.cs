@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace Microsoft.Extensions.Hosting.Wpf;
 
@@ -54,6 +55,18 @@ public static class ApplicationExtensions
         if (!instance.CheckAccess())
         {
             instance.Dispatcher.Invoke(action);
+        }
+        else
+        {
+            action();
+        }
+    }
+
+    internal static void InvokeIfRequired(this Dispatcher dispatcher, Action action)
+    {
+        if (!dispatcher.CheckAccess())
+        {
+            dispatcher.Invoke(action);
         }
         else
         {
