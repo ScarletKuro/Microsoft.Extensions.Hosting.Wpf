@@ -65,7 +65,7 @@ internal sealed class WpfThread<TApplication>
         //We need this because otherwise if we have an active open window and call StopApplication, we will get an exception.
         //The exception happens only in certain scenario, for example when UIElement.Visibility is involved.
         //The call of StopApplication happens if HandleApplicationExit was called manually, for example via tray.
-        _wpfContext.WpfApplication.CloseAllWindowsIfAny();
+        _wpfContext.Dispatcher.InvokeIfRequired(() => _wpfContext.WpfApplication.CloseAllWindowsIfAny());
 
         var applicationLifeTime = _serviceProvider.GetService<IHostApplicationLifetime>();
         applicationLifeTime?.StopApplication();
@@ -89,7 +89,7 @@ internal sealed class WpfThread<TApplication>
     {
         // Create our SynchronizationContext, and install it:
         var synchronizationContext = new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher);
-        SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+        SynchronizationContext.SetSynchronizationContext(synchronizationContext);
         _synchronizationContext = synchronizationContext;
 
         var application = CreateApplication();

@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
     /// <see cref="AddThreadSwitching(IServiceCollection)"/>
     /// <note>Should we mark this method as obsolete or keep it? There is no real scenario where we need <see cref="TApplication"/>.</note>
     public static IServiceCollection AddThreadSwitching<TApplication>(this IServiceCollection services)
-        where TApplication : Application, IApplicationInitializeComponent, new()
+        where TApplication : Application, IApplicationInitializeComponent
     {
         services.AddSingleton<JoinableTaskContext>(provider =>
         {

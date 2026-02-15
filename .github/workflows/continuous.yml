@@ -37,7 +37,7 @@ jobs:
         run: ./build.cmd Compile Pack
         env:
           NuGetApiKey: ${{ secrets.NUGET_API_KEY }}
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v6
         with:
           name: packages
           path: artifacts/packages
