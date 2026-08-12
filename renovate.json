@@ -5,10 +5,12 @@
   ],
   "packageRules": [
     {
-      "description": "Automerge GitHub Actions updates only",
+      "description": "Group and automerge GitHub Actions updates only",
       "matchManagers": [
         "github-actions"
       ],
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions",
       "automerge": true,
       "automergeType": "pr",
       "platformAutomerge": true
