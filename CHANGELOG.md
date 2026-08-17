@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-08-17
+### Changed
+- Fixed `WpfThread` shutdown behavior to close WPF windows on the dispatcher thread before stopping the host application.
+- Removed the unnecessary `new()` constraint from `AddThreadSwitching<TApplication>()`.
+- Added `net9.0-windows` and `net10.0-windows` targets to `Extensions.Hosting.Wpf`.
+- `Extensions.Hosting.Wpf.Bootstrap` no longer depends transitively on `Extensions.Hosting.Wpf`; consumers must reference both packages explicitly.
+- `Extensions.Hosting.Wpf.Bootstrap` now targets `net6.0`, `net7.0`, and `net8.0` instead of Windows-specific TFMs because the package itself does not require WPF or WindowsDesktop APIs.
+- Added `net9.0` and `net10.0` targets to `Extensions.Hosting.Wpf.Bootstrap`.
+- Added `net9.0-windows` and `net10.0-windows` targets to `Extensions.Hosting.Wpf.Threading`.
+- Added `net9.0-windows` and `net10.0-windows` targets to `Extensions.Hosting.Wpf.TrayIcon`.
+
+### Removed
+- Transitive `Extensions.Hosting.Wpf` package dependency from `Extensions.Hosting.Wpf.Bootstrap`. This is a breaking change for consumers that only installed the bootstrap package.
+
 ## [3.4.0] - 2023-11-24
 #### Added
 - Add net8-windows explicitly.
@@ -74,7 +88,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 #### Added
 - First release.
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..3.4.0
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..4.0.0
+[4.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.4.0..4.0.0
 [3.4.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.3.0..3.4.0
 [3.3.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.2.0..3.3.0
 [3.2.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.1.0..3.2.0

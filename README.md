@@ -15,7 +15,7 @@ This library also has few extensions packages to add features like tray icon, th
 | **Extensions.Hosting.Wpf** | The main library, with **Microsoft.Extensions.Hosting** for WPF support. | [![NuGet](https://img.shields.io/nuget/vpre/Extensions.Hosting.Wpf.svg)](https://www.nuget.org/packages/Extensions.Hosting.Wpf/) |
 | **Extensions.Hosting.Wpf.TrayIcon** | An extension enabling tray icon support. | [![NuGet](https://img.shields.io/nuget/vpre/Extensions.Hosting.Wpf.TrayIcon.svg)](https://www.nuget.org/packages/Extensions.Hosting.Wpf.TrayIcon/) |
 | **Extensions.Hosting.Wpf.Threading** | An extension enabling thread switching between Main UI Thread and ThreadPool Thread via **Microsoft.VisualStudio.Threading**. | [![NuGet](https://img.shields.io/nuget/vpre/Extensions.Hosting.Wpf.Threading.svg)](https://www.nuget.org/packages/Extensions.Hosting.Wpf.Threading/) |
-| **Extensions.Hosting.Wpf.Bootstrap** | An extension enabling easier bootstrap for 3rd-party DI containers. | [![NuGet](https://img.shields.io/nuget/vpre/Extensions.Hosting.Wpf.Bootstrap.svg)](https://www.nuget.org/packages/Extensions.Hosting.Wpf.Bootstrap/) |
+| **Extensions.Hosting.Wpf.Bootstrap** | An extension enabling easier bootstrap for 3rd-party DI containers. Requires an explicit `Extensions.Hosting.Wpf` reference as of `4.0.0`. | [![NuGet](https://img.shields.io/nuget/vpre/Extensions.Hosting.Wpf.Bootstrap.svg)](https://www.nuget.org/packages/Extensions.Hosting.Wpf.Bootstrap/) |
 
 ## Quick Start
 
@@ -66,6 +66,8 @@ For the full guide including **ViewModel Locator**, **constructor injection**, a
 ## Documentation
 
 Full documentation is available in the **[Wiki](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/wiki)**:
+
+`Extensions.Hosting.Wpf.Bootstrap` no longer includes `Extensions.Hosting.Wpf` transitively starting with `4.0.0`, so bootstrap consumers must install both packages explicitly.
 
 - [Getting Started](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/wiki/3.-Getting-started-%F0%9F%9A%80) — Minimal setup guide
 - [ViewModelLocator Feature](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/wiki/4.-ViewModelLocator-feature-%F0%9F%92%89) — Bind DataContext in XAML via DI

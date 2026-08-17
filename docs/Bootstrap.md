@@ -4,8 +4,14 @@ Not necessary to use, you can register your 3rd DI dependencies also in Configur
 
 ## Getting Started
 
-### Install nuget
-```Install-Package Extensions.Hosting.Wpf.Bootstrap```
+### Install NuGet packages
+Starting with `4.0.0`, `Extensions.Hosting.Wpf.Bootstrap` no longer depends transitively on `Extensions.Hosting.Wpf`.
+You must reference both packages explicitly.
+
+```powershell
+Install-Package Extensions.Hosting.Wpf
+Install-Package Extensions.Hosting.Wpf.Bootstrap
+```
 
 ### Example usage with SimpleInjector
 ```CSharp
