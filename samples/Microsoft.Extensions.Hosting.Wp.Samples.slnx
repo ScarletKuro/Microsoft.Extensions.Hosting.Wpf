@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/Library/">
+    <Project Path="../src/Microsoft.Extensions.Hosting.Wpf.Bootstrap/Microsoft.Extensions.Hosting.Wpf.Bootstrap.csproj" />
+    <Project Path="../src/Microsoft.Extensions.Hosting.Wpf.Threading/Microsoft.Extensions.Hosting.Wpf.Threading.csproj" />
+    <Project Path="../src/Microsoft.Extensions.Hosting.Wpf.TrayIcon/Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj" />
+    <Project Path="../src/Microsoft.Extensions.Hosting.Wpf/Microsoft.Extensions.Hosting.Wpf.csproj" />
+  </Folder>
+  <Project Path="HostingReactiveUI/HostingReactiveUI.csproj" />
+  <Project Path="HostingReactiveUISimpleInjector/HostingReactiveUISimpleInjector.csproj" />
+  <Project Path="HostingReactiveUISimpleInjectorAmbientScope/HostingReactiveUISimpleInjectorAmbientScope.csproj" />
+  <Project Path="HostingReactiveUISimpleInjectorFlowingScope/HostingReactiveUISimpleInjectorFlowingScope.csproj" />
+  <Project Path="HostingSimple/HostingSimple.csproj" />
+</Solution>

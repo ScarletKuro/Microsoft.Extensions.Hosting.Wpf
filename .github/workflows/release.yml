@@ -36,13 +36,13 @@ jobs:
             version.json
 
       - name: Restore
-        run: dotnet restore src/Microsoft.Extensions.Hosting.Wpf.sln
+        run: dotnet restore src/Microsoft.Extensions.Hosting.Wpf.slnx
 
       - name: Build
-        run: dotnet build src/Microsoft.Extensions.Hosting.Wpf.sln -c Release --no-restore
+        run: dotnet build src/Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-restore
 
       - name: Pack
-        run: dotnet pack src/Microsoft.Extensions.Hosting.Wpf.sln -c Release --no-build -o artifacts/packages
+        run: dotnet pack src/Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-build -o artifacts/packages
 
       - name: NuGet login
         id: nuget-login

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Microsoft.Extensions.Hosting.Wpf.Bootstrap/Microsoft.Extensions.Hosting.Wpf.Bootstrap.csproj" />
+  <Project Path="Microsoft.Extensions.Hosting.Wpf.Threading/Microsoft.Extensions.Hosting.Wpf.Threading.csproj" />
+  <Project Path="Microsoft.Extensions.Hosting.Wpf.TrayIcon/Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj" />
+  <Project Path="Microsoft.Extensions.Hosting.Wpf/Microsoft.Extensions.Hosting.Wpf.csproj" />
+</Solution>
