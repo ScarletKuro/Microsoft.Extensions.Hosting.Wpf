@@ -24,13 +24,13 @@ jobs:
             version.json
 
       - name: Restore
-        run: dotnet restore src/Microsoft.Extensions.Hosting.Wpf.slnx
+        run: dotnet restore Microsoft.Extensions.Hosting.Wpf.slnx
 
       - name: Build
-        run: dotnet build src/Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-restore
+        run: dotnet build Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-restore
 
       - name: Pack
-        run: dotnet pack src/Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-build -o artifacts/packages
+        run: dotnet pack Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-build -o artifacts/packages
 
       - name: Upload packages
         uses: actions/upload-artifact@v7
