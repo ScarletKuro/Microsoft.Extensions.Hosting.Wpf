@@ -121,9 +121,8 @@ public class WpfLifetime : IHostLifetime, IDisposable
         // wait one more time after the above log message, but only for ShutdownTimeout, so it doesn't hang forever
         _shutdownBlock.WaitOne(HostOptions.ShutdownTimeout);
 
-        // On Linux if the shutdown is triggered by SIGTERM then that's signaled with the 143 exit code.
-        // Suppress that since we shut down gracefully. https://github.com/aspnet/AspNetCore/issues/6526
-        System.Environment.ExitCode = 0;
+        // Unlike ConsoleLifetime, do not reset Environment.ExitCode: there is no SIGTERM (143) to suppress for WPF,
+        // and it would discard the exit code passed to Application.Shutdown(exitCode).
     }
 
     public void Dispose()

@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - `AddThreadSwitching`: `JoinableTaskFactory` / `JoinableTaskContext` can now be resolved before the WPF UI thread starts, e.g. by a hosted service constructor. Previously this threw "WPF Thread was not started."
+- With `UseWpfLifetime`, the exit code passed to `Application.Shutdown(exitCode)` was reset to 0 when the process exited. `WpfLifetime` no longer overrides `Environment.ExitCode` (a `ConsoleLifetime` SIGTERM workaround that does not apply to WPF).
 
 ## [4.1.1] - 2026-10-13
 ### Fixed

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Reflection;
 using System.Windows;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -116,6 +117,30 @@ public class ApplicationBuilderTests
         using var host = builder.Build();
 
         Assert.IsType<WpfLifetime>(host.Services.GetRequiredService<IHostLifetime>());
+    }
+
+    [Fact]
+    public void ProcessExitKeepsTheApplicationExitCode()
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.Services.AddWpfLifetime(options => options.SuppressStatusMessages = true);
+        using var host = builder.Build();
+        var lifetime = Assert.IsType<WpfLifetime>(host.Services.GetRequiredService<IHostLifetime>());
+        // Disposing releases the shutdown wait in the ProcessExit handler, which otherwise waits for the host to stop.
+        lifetime.Dispose();
+        // AppDomain.ProcessExit only fires when the process ends, so invoke the handler directly.
+        var onProcessExit = typeof(WpfLifetime).GetMethod("OnProcessExit", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        try
+        {
+            // WPF sets this from Application.Shutdown(exitCode).
+            Environment.ExitCode = 3;
+            onProcessExit.Invoke(lifetime, new object?[] { null, EventArgs.Empty });
+            Assert.Equal(3, Environment.ExitCode);
+        }
+        finally
+        {
+            Environment.ExitCode = 0;
+        }
     }
 
     [Fact]
@@ -278,12 +303,15 @@ public class ApplicationBuilderTests
             }).WaitAsync(TimeSpan.FromSeconds(15));
             Assert.Equal(thread.MainThread.ManagedThreadId, switchedThreadId);
 
-            await application.Dispatcher.InvokeAsync(() => application.Shutdown());
+            await application.Dispatcher.InvokeAsync(() => application.Shutdown(3));
             await Task.Delay(Timeout.Infinite, lifetime.ApplicationStopping).ContinueWith(_ => { }, TaskScheduler.Default).WaitAsync(TimeSpan.FromSeconds(15));
             Assert.True(lifetime.ApplicationStopping.IsCancellationRequested);
+            // Application.Shutdown(exitCode) becomes the process exit code, like in a plain WPF app.
+            Assert.Equal(3, Environment.ExitCode);
         }
         finally
         {
+            Environment.ExitCode = 0;
             await host.StopAsync().WaitAsync(TimeSpan.FromSeconds(15));
             Assert.True(thread.MainThread.Join(TimeSpan.FromSeconds(5)));
         }
