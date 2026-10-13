@@ -106,6 +106,17 @@ public class ApplicationBuilderTests
     }
 
     [Fact]
+    public void LifetimeDoesNotRequireAddWpf()
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.Services.AddWpfLifetime();
+
+        using var host = builder.Build();
+
+        Assert.IsType<WpfLifetime>(host.Services.GetRequiredService<IHostLifetime>());
+    }
+
+    [Fact]
     public void LegacyHostingExtensionsRemainAvailable()
     {
         using var host = Host.CreateDefaultBuilder()

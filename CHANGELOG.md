@@ -21,7 +21,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - **Breaking:** Renamed `WpfLifeTimeOptions` to `WpfLifetimeOptions`.
 - **Breaking:** `AbstractViewModelLocatorHost<TViewModelLocator>` is now `abstract`; derive your locator host from it.
 - **Breaking:** `WpfHostedService<TApplication>` is now internal. It is registered by `AddWpf<TApplication>()`.
-- **Breaking:** `IWpfContext.IsLifetimeLinked` and `IWpfContext.IsRunning` are now get-only (they previously had `internal` setters).
+- **Breaking:** `IWpfContext.IsRunning` is now get-only (it previously had an `internal` setter).
+- **Breaking:** Removed `IWpfContext.IsLifetimeLinked`. Since 4.1.1 the host is stopped when WPF exits regardless of the `IHostLifetime`, so the flag no longer affected anything. To check whether `WpfLifetime` is used, test `services.GetService<IHostLifetime>() is WpfLifetime`.
+- **Breaking:** `WpfLifetime` constructors no longer take an `IWpfContext` parameter; `WpfLifetime` no longer depends on `AddWpf<TApplication>()`.
 - **Breaking:** Renamed `Extensions.Hosting.Wpf.Bootstrap`'s `WpfHostingExtensions` to `WpfBootstrapHostingExtensions` to avoid clashing with the main package's class. Extension-method call sites are unaffected.
 - `UseWpfContainerBootstrap` and `AddBootstrap` now throw `ArgumentNullException` for a null container or service collection.
 - `IHost.UseWpfViewModelLocator` and `IHostBuilder.UseWpfLifetime(configureOptions)` now throw `ArgumentNullException` for a null locator, factory, or options delegate.
