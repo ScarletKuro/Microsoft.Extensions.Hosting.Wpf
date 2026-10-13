@@ -44,9 +44,29 @@ public class HostingTests
         Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<TestApplication>());
     }
 
+    [Fact]
+    public async Task ApplicationStartupFailureFailsHostStart()
+    {
+        var failure = new InvalidOperationException("Application failed to start.");
+        using var host = Host.CreateDefaultBuilder()
+            .ConfigureServices(services => services.AddWpf<TestApplication>(_ => throw failure))
+            .UseWpfLifetime(options => options.SuppressStatusMessages = true)
+            .Build();
+        var thread = host.Services.GetRequiredService<IWpfThread<TestApplication>>();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync().WaitAsync(TimeSpan.FromSeconds(15)));
+
+        Assert.Same(failure, exception);
+        Assert.True(thread.MainThread.Join(TimeSpan.FromSeconds(5)));
+        Assert.False(host.Services.GetRequiredService<IWpfContext<TestApplication>>().IsRunning);
+    }
+
     // WPF allows only one Application per AppDomain. Keep all real UI startup in this test.
-    // Regression: WPF shutting down on its own (Exit -> StopApplication) raced with WpfHostedService.StopAsync,
-    // which then awaited an aborted dispatcher operation and failed with TaskCanceledException.
+    // Regressions:
+    // - 4.1.0: WPF shutting down on its own (Exit -> StopApplication) raced with WpfHostedService.StopAsync,
+    //   which then awaited an aborted dispatcher operation and failed with TaskCanceledException.
+    // - 4.1.1: with WpfLifetime, Application.Exit was hooked in ApplicationStarted, which could run before the
+    //   application existed, so closing WPF never stopped the host. No hosted service may delay startup here.
     [Fact]
     public async Task HostInitializesOnStaThreadAndStopsCleanlyWhenWpfExits()
     {
@@ -57,7 +77,6 @@ public class HostingTests
             {
                 services.AddSingleton(state);
                 services.AddWpf<TestApplication>();
-                services.AddHostedService<AwaitApplicationStartup>();
             })
             .UseWpfLifetime(options => options.SuppressStatusMessages = true)
             .Build()
@@ -73,6 +92,8 @@ public class HostingTests
         try
         {
             await host.StartAsync().WaitAsync(TimeSpan.FromSeconds(15));
+            // StartAsync waits for the UI thread to create and initialize the application.
+            Assert.NotNull(context.WpfApplication);
             var application = await state.Started.Task.WaitAsync(TimeSpan.FromSeconds(15));
             Assert.Same(locator, application.Locator);
             Assert.Equal(new[] { "Constructor", "InitializeComponent", "Initialize", "Factory", "InitializeLocator", "Startup" }, state.Events.ToArray());
@@ -136,11 +157,5 @@ public class HostingTests
             _state.Record("Startup");
             _state.Started.SetResult(this);
         }
-    }
-
-    private sealed class AwaitApplicationStartup(ApplicationState state) : IHostedService
-    {
-        public async Task StartAsync(CancellationToken cancellationToken) => await state.Started.Task.WaitAsync(cancellationToken);
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

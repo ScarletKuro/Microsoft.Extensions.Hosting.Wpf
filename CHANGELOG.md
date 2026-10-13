@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- With `UseWpfLifetime`, closing the WPF application could leave the host running (and the process alive without a window). `Application.Exit` was subscribed in `ApplicationStarted`, which could run before the application was created. The subscription now always happens on the UI thread before `Application.Run()`.
+- An exception while creating or initializing the application (constructor, `InitializeComponent`, `UseWpfInitialization` / `UseWpfViewModelLocator`, the locator factory, or an `IWpfComponent` such as a tray icon) crashed the process from the UI thread without being logged. It now fails `IHost.StartAsync` with the original exception.
+
+### Changed
+- `WpfHostedService.StartAsync` now completes once the application is created and initialized on the UI thread, right before `Application.Run()`, so the application exists when `ApplicationStarted` is raised.
+
 ## [4.1.0] - 2026-10-13
 ### Fixed
 - Fixed a race where stopping the host after WPF exited on its own (e.g. closing the last window with `WpfLifetime`) could fail with `TaskCanceledException` from `WpfHostedService.StopAsync`. `IWpfContext.IsRunning` is now reset when `Application.Run()` returns.

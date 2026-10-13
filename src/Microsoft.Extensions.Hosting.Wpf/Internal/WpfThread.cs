@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,7 @@ internal sealed class WpfThread<TApplication>
     private Action<WpfContext<TApplication>>? _preContextInitialization;
     private bool _initializationLocked;
     private SynchronizationContext? _synchronizationContext;
+    private readonly TaskCompletionSource<bool> _initialized = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     IWpfContext IWpfThread.WpfContext => _wpfContext;
 
@@ -28,6 +30,12 @@ internal sealed class WpfThread<TApplication>
     public Thread MainThread { get; }
 
     public SynchronizationContext SynchronizationContext => _synchronizationContext ?? throw new InvalidOperationException("WPF Thread was not started.");
+
+    /// <summary>
+    /// Completes once the application is created and initialized on the UI thread, right before <see cref="Application.Run()"/>.
+    /// Faults with the original exception if that fails.
+    /// </summary>
+    internal Task Initialized => _initialized.Task;
 
     /// <summary>
     /// Constructor
@@ -76,8 +84,23 @@ internal sealed class WpfThread<TApplication>
     /// </summary>
     private void InternalUiThreadStart()
     {
-        // Do the pre initialization, if any
-        PreUiThreadStart();
+        // Disposed when the UI thread ends, also if a later component fails to initialize.
+        using var wpfComponents = new DisposableList<IWpfComponent>();
+#pragma warning disable CA1031 // The exception is not swallowed: it is rethrown on the host thread by WpfHostedService.StartAsync via Initialized.
+        try
+        {
+            // Do the pre initialization, if any
+            PreUiThreadStart();
+            InitializeWpfComponents(wpfComponents);
+        }
+        catch (Exception exception)
+        {
+            // An exception escaping this background thread would kill the process without being logged.
+            _initialized.TrySetException(exception);
+            return;
+        }
+#pragma warning restore CA1031
+
         // Run the actual code
         UiThreadStart();
     }
@@ -94,16 +117,13 @@ internal sealed class WpfThread<TApplication>
 
         var application = CreateApplication();
 
-        //We must set this if default / third party lifetime is used.
-        //Only observe event if we don't have WpfLifetime linked that already listens and calls StopApplication on demand
-        if (!_wpfContext.IsLifetimeLinked)
+        // Register to the WPF application exit to stop the host application, whatever host lifetime is used.
+        // This must happen here, on the UI thread before Run(): WpfLifetime used to subscribe in ApplicationStarted instead,
+        // which could run before the application was created and then never stopped the host.
+        application.Exit += (_, _) =>
         {
-            // Register to the WPF application exit to stop the host application
-            application.Exit += (_, _) =>
-            {
-                HandleApplicationExit();
-            };
-        }
+            HandleApplicationExit();
+        };
 
         // Store the application for others to interact
         _wpfContext.SetWpfApplication(application);
@@ -119,20 +139,25 @@ internal sealed class WpfThread<TApplication>
     {
         // Mark the application as running
         _wpfContext.IsRunning = true;
-
-        var wpfComponentsFunc = _serviceProvider.GetServices<Func<IWpfComponent>>();
-        using var disposableList = new DisposableList<IWpfComponent>();
-        foreach (var wpfComponentFunc in wpfComponentsFunc)
-        {
-            var wpfComponent = wpfComponentFunc.Invoke();
-            wpfComponent.InitializeComponent();
-            disposableList.Add(wpfComponent);
-        }
+        // Let WpfHostedService.StartAsync complete
+        _initialized.TrySetResult(true);
 
         //Blocking method until application exit.
         _wpfContext.WpfApplication?.Run();
         // WPF has exited (on its own or via StopAsync), the dispatcher is shut down.
         _wpfContext.IsRunning = false;
+    }
+
+    private void InitializeWpfComponents(DisposableList<IWpfComponent> wpfComponents)
+    {
+        var wpfComponentsFunc = _serviceProvider.GetServices<Func<IWpfComponent>>();
+        foreach (var wpfComponentFunc in wpfComponentsFunc)
+        {
+            var wpfComponent = wpfComponentFunc.Invoke();
+            // Track it before initializing, so it is disposed even if InitializeComponent throws.
+            wpfComponents.Add(wpfComponent);
+            wpfComponent.InitializeComponent();
+        }
     }
 
     private TApplication CreateApplication()

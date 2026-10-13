@@ -102,12 +102,7 @@ public class WpfLifetime : IHostLifetime, IDisposable
             Logger.HostingEnvironment(Environment.EnvironmentName);
             Logger.ContentRootPath(Environment.ContentRootPath);
         }
-        //Hookup here because WpfApplication is initialized only when WpfHostedService is up
-        //Make sure to do it only on Main UI thread because it have VerifyAccess()
-        WpfContext.WpfApplication?.InvokeIfRequired(() =>
-        {
-            WpfContext.WpfApplication.Exit += OnWpfExiting;
-        });
+        //Stopping the host when WPF exits is done by WpfThread, which subscribes to Application.Exit on the UI thread before Run().
     }
 
     private void OnApplicationStopping()
@@ -116,12 +111,6 @@ public class WpfLifetime : IHostLifetime, IDisposable
         {
             Logger.WpfApplicationShuttingDown();
         }
-
-        //Make sure to do it only on Main UI thread because it have VerifyAccess()
-        WpfContext.WpfApplication?.InvokeIfRequired(() =>
-        {
-            WpfContext.WpfApplication.Exit -= OnWpfExiting;
-        });
     }
 
     private void OnWpfApplicationStopped()
@@ -146,11 +135,6 @@ public class WpfLifetime : IHostLifetime, IDisposable
         // On Linux if the shutdown is triggered by SIGTERM then that's signaled with the 143 exit code.
         // Suppress that since we shut down gracefully. https://github.com/aspnet/AspNetCore/issues/6526
         System.Environment.ExitCode = 0;
-    }
-
-    private void OnWpfExiting(object? sender, ExitEventArgs e)
-    {
-        ApplicationLifetime.StopApplication();
     }
 
     public void Dispose()

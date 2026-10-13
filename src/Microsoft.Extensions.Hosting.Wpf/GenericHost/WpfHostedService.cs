@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.Extensions.Hosting.Wpf.Internal;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
@@ -40,7 +41,24 @@ public class WpfHostedService<TApplication>
         _wpfThread.Start();
         _logger.WpfThreadStarted();
 
+        // Wait until the application is created and initialized on the UI thread. This makes startup failures fail the host
+        // instead of crashing the process, and guarantees the application exists before ApplicationStarted is raised.
+        if (_wpfThread is WpfThread<TApplication> wpfThread)
+        {
+            return WaitAsync(wpfThread.Initialized, cancellationToken);
+        }
+
         return Task.CompletedTask;
+    }
+
+    private static async Task WaitAsync(Task task, CancellationToken cancellationToken)
+    {
+        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (cancellationToken.Register(() => cancelled.TrySetCanceled(cancellationToken)))
+        {
+            var completed = await Task.WhenAny(task, cancelled.Task).ConfigureAwait(false);
+            await completed.ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />
