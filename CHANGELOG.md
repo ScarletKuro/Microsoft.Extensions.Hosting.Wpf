@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `IWpfContext.IsRunning` is now safe to read from any thread.
 - Stopping the host no longer reads WPF's private `Application._appIsShutdown` field via reflection; it uses the public `Dispatcher.HasShutdownStarted`.
 - Calling `host.UseWpfInitialization` / `host.UseWpfViewModelLocator` after the host has started now throws `InvalidOperationException` instead of being silently ignored or racing with the UI thread.
+- **Breaking:** `AddWpf<TApplication>()` now throws `InvalidOperationException` if `AddWpf` was already called for a different application type (WPF allows only one `Application` per process; this previously failed at runtime). It also throws `ArgumentNullException` for null arguments.
 - `IHost.UseWpfViewModelLocator` and `IHostBuilder.UseWpfLifetime(configureOptions)` now throw `ArgumentNullException` for a null locator, factory, or options delegate.
 
 ### Fixed

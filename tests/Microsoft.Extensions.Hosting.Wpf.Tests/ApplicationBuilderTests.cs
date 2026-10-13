@@ -144,6 +144,31 @@ public class ApplicationBuilderTests
     }
 
     [Fact]
+    public void OnlyOneWpfApplicationTypeCanBeAdded()
+    {
+        var services = new ServiceCollection();
+        services.AddWpf<TestApplication>();
+        var count = services.Count;
+
+        // Same application again is allowed (TryAdd), a different one is rejected without registering anything.
+        services.AddWpf<TestApplication>();
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddWpf<OtherApplication>());
+        Assert.Throws<InvalidOperationException>(() => services.AddWpf<OtherApplication>(_ => new OtherApplication()));
+
+        Assert.Contains("AddWpf<TestApplication>()", exception.Message);
+        Assert.Equal(count, services.Count);
+    }
+
+    [Fact]
+    public void AddWpfRejectsNullArguments()
+    {
+        IServiceCollection missing = null!;
+        Assert.Throws<ArgumentNullException>(() => missing.AddWpf<TestApplication>());
+        Assert.Throws<ArgumentNullException>(() => missing.AddWpf<TestApplication>(_ => throw new InvalidOperationException()));
+        Assert.Throws<ArgumentNullException>(() => new ServiceCollection().AddWpf<TestApplication>(null!));
+    }
+
+    [Fact]
     public void ThreadSwitchingCanBeResolvedBeforeTheUiThreadStarts()
     {
         // The host creates all hosted services before starting any, so constructor injection of
@@ -320,6 +345,14 @@ public class ApplicationBuilderTests
     }
 
     public sealed class Locator;
+
+    // Never instantiated: WPF allows only one Application per AppDomain.
+    public sealed class OtherApplication : Application, IApplicationInitializeComponent
+    {
+        public void InitializeComponent()
+        {
+        }
+    }
 
     public sealed class ApplicationState
     {

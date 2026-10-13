@@ -20,6 +20,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddWpf<TApplication>(this IServiceCollection services)
         where TApplication : Application, IApplicationInitializeComponent
     {
+        ThrowHelper.ThrowIfNull(services);
+        EnsureSingleWpfApplication<TApplication>(services);
+
         //Only single TApplication should exist.
         services.TryAddSingleton<Func<TApplication>>(provider =>
         {
@@ -40,6 +43,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddWpf<TApplication>(this IServiceCollection services, Func<IServiceProvider, TApplication> createApplication)
         where TApplication : Application, IApplicationInitializeComponent
     {
+        ThrowHelper.ThrowIfNull(services);
+        ThrowHelper.ThrowIfNull(createApplication);
+        EnsureSingleWpfApplication<TApplication>(services);
+
         //Only single TApplication should exist.
         services.TryAddSingleton<Func<TApplication>>(provider =>
         {
@@ -155,6 +162,21 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<WpfInitializationValidator<TApplication>>();
 
         return services;
+    }
+
+    private static void EnsureSingleWpfApplication<TApplication>(IServiceCollection services)
+        where TApplication : Application, IApplicationInitializeComponent
+    {
+        // WPF allows only one Application per AppDomain, and IWpfContext / IWpfThread can only point to one of them.
+        // Calling AddWpf again for the same TApplication is fine (registrations use TryAdd).
+        foreach (var service in services)
+        {
+            if (service.ServiceType == typeof(IWpfContext) && service.ImplementationInstance is IWpfContext existing && existing is not WpfContext<TApplication>)
+            {
+                var existingApplication = existing.GetType().GetGenericArguments()[0].Name;
+                throw new InvalidOperationException($"AddWpf<{existingApplication}>() was already called. Only one WPF application can be hosted per process, so AddWpf<{typeof(TApplication).Name}>() is not allowed.");
+            }
+        }
     }
 
     private static IServiceCollection AddWpfCommonRegistrations<TApplication>(this IServiceCollection services)
