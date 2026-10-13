@@ -22,7 +22,8 @@ public static class ServiceCollectionExtensions
         {
             var wpfThread = provider.GetRequiredService<IWpfThread<TApplication>>();
 
-            return new JoinableTaskContext(wpfThread.MainThread, wpfThread.SynchronizationContext);
+            //MainThread exists before the UI thread starts; the synchronization context is resolved when first used.
+            return new JoinableTaskContext(wpfThread.MainThread, new WpfThreadSynchronizationContext(wpfThread));
         });
         services.AddSingleton<JoinableTaskFactory>();
 
@@ -40,7 +41,8 @@ public static class ServiceCollectionExtensions
         {
             var wpfThread = provider.GetRequiredService<IWpfThread>();
 
-            return new JoinableTaskContext(wpfThread.MainThread, wpfThread.SynchronizationContext);
+            //MainThread exists before the UI thread starts; the synchronization context is resolved when first used.
+            return new JoinableTaskContext(wpfThread.MainThread, new WpfThreadSynchronizationContext(wpfThread));
         });
         services.AddSingleton<JoinableTaskFactory>();
         return services;

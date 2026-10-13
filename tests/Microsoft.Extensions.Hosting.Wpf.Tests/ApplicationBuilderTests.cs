@@ -5,7 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Hosting.Wpf.GenericHost;
 using Microsoft.Extensions.Hosting.Wpf.Locator;
+using Microsoft.Extensions.Hosting.Wpf.Threading;
 using Microsoft.Extensions.Options;
+using Microsoft.VisualStudio.Threading;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Tests;
@@ -114,6 +116,22 @@ public class ApplicationBuilderTests
         using var host = builder.Build();
 
         Assert.IsType<WpfLifetime>(host.Services.GetRequiredService<IHostLifetime>());
+    }
+
+    [Fact]
+    public void ThreadSwitchingCanBeResolvedBeforeTheUiThreadStarts()
+    {
+        // The host creates all hosted services before starting any, so constructor injection of
+        // JoinableTaskFactory happens before the WPF UI thread exists.
+        var builder = Host.CreateApplicationBuilder();
+        builder.Services.AddWpf<TestApplication>();
+        builder.Services.AddThreadSwitching();
+
+        using var host = builder.Build();
+
+        Assert.NotNull(host.Services.GetRequiredService<JoinableTaskFactory>());
+        var context = host.Services.GetRequiredService<JoinableTaskContext>();
+        Assert.Same(host.Services.GetRequiredService<IWpfThread<TestApplication>>().MainThread, context.MainThread);
     }
 
     [Fact]
@@ -226,6 +244,7 @@ public class ApplicationBuilderTests
         builder.Services.AddSingleton(locator);
         builder.Services.AddWpf<TestApplication>();
         builder.Services.AddWpfLifetime(options => options.SuppressStatusMessages = true);
+        builder.Services.AddThreadSwitching();
         builder.Services.AddWpfViewModelLocator<TestApplication, Locator>(provider =>
         {
             locatorProvider = provider;
@@ -249,6 +268,15 @@ public class ApplicationBuilderTests
             Assert.All(state.Threads, id => Assert.Equal(thread.MainThread.ManagedThreadId, id));
             Assert.Equal(ApartmentState.STA, thread.MainThread.GetApartmentState());
             Assert.True(context.IsRunning);
+
+            // AddThreadSwitching: switching from a thread pool thread lands on the WPF UI thread.
+            var joinableTaskFactory = host.Services.GetRequiredService<JoinableTaskFactory>();
+            var switchedThreadId = await Task.Run(async () =>
+            {
+                await joinableTaskFactory.SwitchToMainThreadAsync();
+                return Environment.CurrentManagedThreadId;
+            }).WaitAsync(TimeSpan.FromSeconds(15));
+            Assert.Equal(thread.MainThread.ManagedThreadId, switchedThreadId);
 
             await application.Dispatcher.InvokeAsync(() => application.Shutdown());
             await Task.Delay(Timeout.Infinite, lifetime.ApplicationStopping).ContinueWith(_ => { }, TaskScheduler.Default).WaitAsync(TimeSpan.FromSeconds(15));

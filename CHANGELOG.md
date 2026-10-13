@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `IWpfContext.IsRunning` is now safe to read from any thread.
 - `IHost.UseWpfViewModelLocator` and `IHostBuilder.UseWpfLifetime(configureOptions)` now throw `ArgumentNullException` for a null locator, factory, or options delegate.
 
+### Fixed
+- `AddThreadSwitching`: `JoinableTaskFactory` / `JoinableTaskContext` can now be resolved before the WPF UI thread starts, e.g. by a hosted service constructor. Previously this threw "WPF Thread was not started."
+
 ## [4.1.1] - 2026-10-13
 ### Fixed
 - With `UseWpfLifetime`, closing the WPF application could leave the host running (and the process alive without a window). `Application.Exit` was subscribed in `ApplicationStarted`, which could run before the application was created. The subscription now always happens on the UI thread before `Application.Run()`.
