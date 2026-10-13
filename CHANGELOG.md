@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - **Breaking:** `WpfLifetime` constructors no longer take an `IWpfContext` parameter; `WpfLifetime` no longer depends on `AddWpf<TApplication>()`.
 - **Breaking:** Renamed `Extensions.Hosting.Wpf.Bootstrap`'s `WpfHostingExtensions` to `WpfBootstrapHostingExtensions` to avoid clashing with the main package's class. Extension-method call sites are unaffected.
 - `UseWpfContainerBootstrap` and `AddBootstrap` now throw `ArgumentNullException` for a null container or service collection.
+- `AddWpfTrayIcon` now throws `ArgumentNullException` for a null service collection or factory.
+- The error thrown by `AbstractViewModelLocatorHost.ViewModelLocator` when no locator is set now describes the current setup (`InitializeLocator`, `AddWpfViewModelLocator`).
+- `IWpfContext.IsRunning` is now safe to read from any thread.
 - `IHost.UseWpfViewModelLocator` and `IHostBuilder.UseWpfLifetime(configureOptions)` now throw `ArgumentNullException` for a null locator, factory, or options delegate.
 
 ## [4.1.1] - 2026-10-13

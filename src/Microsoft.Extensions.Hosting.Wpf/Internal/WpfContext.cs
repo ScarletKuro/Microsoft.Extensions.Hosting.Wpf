@@ -13,10 +13,17 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 internal sealed class WpfContext<TApplication>
     : IWpfContext<TApplication> where TApplication : Application
 {
+    // Written on the UI thread and read from host threads (StopAsync, HandleApplicationExit callers).
+    private volatile bool _isRunning;
+
     /// <summary>
     /// Shows if WPF is running inside Microsoft.Extensions.Hosting
     /// </summary>
-    public bool IsRunning { get; internal set; }
+    public bool IsRunning
+    {
+        get => _isRunning;
+        internal set => _isRunning = value;
+    }
 
     /// <inheritdoc />
     Application? IWpfContext.WpfApplication => WpfApplication;

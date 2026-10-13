@@ -8,6 +8,8 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <AnalysisLevel>latest</AnalysisLevel>
+    <!-- ArgumentNullException.ThrowIfNull is not available on net4.x targets -->
+    <NoWarn>$(NoWarn);CA1510</NoWarn>
   </PropertyGroup>
   
   <PropertyGroup>
