@@ -10,6 +10,9 @@ internal sealed class WpfInitialization<TApplication>
     public static string AlreadyConfiguredMessage { get; } =
         $"WPF initialization for {typeof(TApplication).Name} is already configured. Use only one of UseWpfInitialization<{typeof(TApplication).Name}> / AddWpfInitialization<{typeof(TApplication).Name}> or UseWpfViewModelLocator<{typeof(TApplication).Name}> / AddWpfViewModelLocator<{typeof(TApplication).Name}>, and call it only once.";
 
+    public static string AlreadyStartedMessage { get; } =
+        $"WPF initialization for {typeof(TApplication).Name} must be configured before the host is started. Call UseWpfInitialization / UseWpfViewModelLocator right after Build(), or register it with services.AddWpfInitialization / AddWpfViewModelLocator.";
+
     public static string MissingApplicationMessage { get; } =
         $"WPF initialization for {typeof(TApplication).Name} is configured, but {typeof(TApplication).Name} is not registered. Call services.AddWpf<{typeof(TApplication).Name}>().";
 

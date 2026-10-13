@@ -172,6 +172,12 @@ internal sealed class WpfThread<TApplication>
     /// </summary>
     internal void SetPreContextInitialization(Action<IWpfContext<TApplication>> preContextInitialization)
     {
+        // After Start() the UI thread may already have run (or be running) the initialization step, so a late call would be ignored or race.
+        if ((MainThread.ThreadState & ThreadState.Unstarted) == 0)
+        {
+            throw new InvalidOperationException(WpfInitialization<TApplication>.AlreadyStartedMessage);
+        }
+
         if (_initializationLocked)
         {
             throw new InvalidOperationException(WpfInitialization<TApplication>.AlreadyConfiguredMessage);

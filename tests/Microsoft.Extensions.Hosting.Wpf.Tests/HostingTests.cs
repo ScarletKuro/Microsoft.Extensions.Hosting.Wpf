@@ -30,6 +30,19 @@ public class HostingTests
     }
 
     [Fact]
+    public async Task InitializationAfterStartIsRejected()
+    {
+        // The failing factory starts the UI thread without creating a WPF Application (one per AppDomain).
+        using var host = Host.CreateDefaultBuilder()
+            .ConfigureServices(services => services.AddWpf<ApplicationBuilderTests.TestApplication>(_ => throw new InvalidOperationException("Not created.")))
+            .Build();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync().WaitAsync(TimeSpan.FromSeconds(15)));
+
+        var exception = Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<ApplicationBuilderTests.TestApplication>());
+        Assert.Contains("before the host is started", exception.Message);
+    }
+
+    [Fact]
     public async Task ApplicationStartupFailureFailsHostStart()
     {
         var failure = new InvalidOperationException("Application failed to start.");
