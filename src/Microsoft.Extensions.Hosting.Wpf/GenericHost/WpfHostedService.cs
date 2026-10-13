@@ -61,9 +61,9 @@ internal sealed class WpfHostedService<TApplication>
     {
         if (_wpfContext is { IsRunning: true, WpfApplication: not null })
         {
-            //If true means that WPF is already shutdown internally. Usually happens when ShutdownMode is set to OnLastWindowClose or OnMainWindowClose
-            //We need to check otherwise if we call Shutdown twice we get an exception
-            bool isShutdown = _wpfContext.WpfApplication.IsWpfShutdown();
+            //If true WPF is already shutting down on its own, e.g. ShutdownMode is OnLastWindowClose or OnMainWindowClose
+            //and the last window was closed. Then there is nothing to stop; the aborted-operation catch below covers the remaining race.
+            bool isShutdown = _wpfContext.Dispatcher.HasShutdownStarted;
             if (!isShutdown)
             {
                 _logger.WpfStopping();

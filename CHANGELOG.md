@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `AddWpfTrayIcon` now throws `ArgumentNullException` for a null service collection or factory.
 - The error thrown by `AbstractViewModelLocatorHost.ViewModelLocator` when no locator is set now describes the current setup (`InitializeLocator`, `AddWpfViewModelLocator`).
 - `IWpfContext.IsRunning` is now safe to read from any thread.
+- Stopping the host no longer reads WPF's private `Application._appIsShutdown` field via reflection; it uses the public `Dispatcher.HasShutdownStarted`.
 - `IHost.UseWpfViewModelLocator` and `IHostBuilder.UseWpfLifetime(configureOptions)` now throw `ArgumentNullException` for a null locator, factory, or options delegate.
 
 ### Fixed
