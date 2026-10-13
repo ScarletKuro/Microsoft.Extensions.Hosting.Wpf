@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-10-13
 ### Fixed
 - Fixed a race where stopping the host after WPF exited on its own (e.g. closing the last window with `WpfLifetime`) could fail with `TaskCanceledException` from `WpfHostedService.StopAsync`. `IWpfContext.IsRunning` is now reset when `Application.Run()` returns.
 
@@ -91,7 +92,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 #### Added
 - First release.
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..4.0.0
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..4.1.0
+[4.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/4.0.0..4.1.0
 [4.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.4.0..4.0.0
 [3.4.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.3.0..3.4.0
 [3.3.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.2.0..3.3.0
