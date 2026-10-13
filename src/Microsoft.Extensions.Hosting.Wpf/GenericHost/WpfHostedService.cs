@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Logging;
 
@@ -54,11 +55,21 @@ public class WpfHostedService<TApplication>
             {
                 _logger.WpfStopping();
                 // Stop application
-                await _wpfContext.Dispatcher.InvokeAsync(() =>
+                var operation = _wpfContext.Dispatcher.InvokeAsync(() =>
                 {
                     _wpfContext.IsRunning = false;
                     _wpfContext.WpfApplication.Shutdown(0);
                 });
+
+                try
+                {
+                    await operation;
+                }
+                catch (TaskCanceledException) when (operation.Status == DispatcherOperationStatus.Aborted)
+                {
+                    //WPF was already shutting down on its own (e.g. Exit triggered StopApplication) and the dispatcher
+                    //shut down before running our callback. The application is stopped, so there is nothing left to do.
+                }
             }
         }
     }

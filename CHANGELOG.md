@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Fixed a race where stopping the host after WPF exited on its own (e.g. closing the last window with `WpfLifetime`) could fail with `TaskCanceledException` from `WpfHostedService.StopAsync`. `IWpfContext.IsRunning` is now reset when `Application.Run()` returns.
+
 ## [4.0.0] - 2026-08-17
 ### Changed
 - Fixed `WpfThread` shutdown behavior to close WPF windows on the dispatcher thread before stopping the host application.

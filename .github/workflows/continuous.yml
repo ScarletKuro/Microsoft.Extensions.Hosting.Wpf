@@ -4,6 +4,26 @@ on:
   push:
 
 jobs:
+  test:
+    name: Test WPF hosting on Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Test
+        run: dotnet test tests/Microsoft.Extensions.Hosting.Wpf.Tests/Microsoft.Extensions.Hosting.Wpf.Tests.csproj -c Release
+
   build:
     name: Build and pack
     runs-on: ubuntu-latest

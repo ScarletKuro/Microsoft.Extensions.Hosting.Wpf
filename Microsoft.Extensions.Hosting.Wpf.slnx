@@ -5,4 +5,7 @@
     <Project Path="src/Microsoft.Extensions.Hosting.Wpf.TrayIcon/Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj" />
     <Project Path="src/Microsoft.Extensions.Hosting.Wpf/Microsoft.Extensions.Hosting.Wpf.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Microsoft.Extensions.Hosting.Wpf.Tests/Microsoft.Extensions.Hosting.Wpf.Tests.csproj" />
+  </Folder>
 </Solution>

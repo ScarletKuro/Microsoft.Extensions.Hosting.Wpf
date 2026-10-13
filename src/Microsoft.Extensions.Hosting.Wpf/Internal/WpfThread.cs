@@ -131,6 +131,8 @@ internal sealed class WpfThread<TApplication>
 
         //Blocking method until application exit.
         _wpfContext.WpfApplication?.Run();
+        // WPF has exited (on its own or via StopAsync), the dispatcher is shut down.
+        _wpfContext.IsRunning = false;
     }
 
     private TApplication CreateApplication()
