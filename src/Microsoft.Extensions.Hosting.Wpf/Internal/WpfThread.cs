@@ -174,7 +174,7 @@ internal sealed class WpfThread<TApplication>
     {
         if (_initializationLocked)
         {
-            throw new InvalidOperationException($"Do not use .UseWpfInitialization<{typeof(TApplication).Name}> and .UseWpfViewModelLocator<{typeof(TApplication).Name}> together or call them multiple times.");
+            throw new InvalidOperationException(WpfInitialization<TApplication>.AlreadyConfiguredMessage);
         }
 
         _preContextInitialization = preContextInitialization;

@@ -80,20 +80,32 @@ builder.UseWpfViewModelLocator<App, IViewModelLocator>(
 Application initialization and the locator factory run on the WPF UI thread, after
 `InitializeComponent()` and before `Application.Run()`. The factory receives the built
 host's service provider. Use either initialization extension once per application;
-the locator extension also calls `Initialize()`.
+the locator extension also calls `Initialize()`. If `AddWpf<App>()` is missing, host
+startup fails with an `InvalidOperationException`.
+
+The same registrations are available directly on `IServiceCollection`
+(`services.AddWpfInitialization<App>()` / `services.AddWpfViewModelLocator<App, IViewModelLocator>(...)`),
+which is what the builder extensions call.
 
 `UseWpfLifetime(options => options.SuppressStatusMessages = true)` configures lifetime
 logging. It is optional; without it, WPF continues to use the host's default lifetime.
 
-The existing `IHostBuilder` and post-build `IHost` extensions also remain available:
+`IHostBuilder` supports the same extensions, also configured before `Build()`:
 
 ```csharp
 using IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices(services => services.AddWpf<App>())
     .UseWpfLifetime()
+    .UseWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider))
     .Build();
 host.Run();
 ```
+
+The post-build `IHost` extensions (`host.UseWpfInitialization<App>()`,
+`host.UseWpfViewModelLocator<App, ...>(...)`) remain available for setups that must run
+after the host is built, for example when a third-party container is bootstrapped from the
+built host. Configure initialization in only one place: combining the pre-build and
+post-build extensions throws.
 
 ### 3. Update `.csproj`
 ```xml

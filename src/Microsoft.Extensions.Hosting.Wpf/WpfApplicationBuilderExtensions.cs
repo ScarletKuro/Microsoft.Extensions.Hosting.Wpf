@@ -3,7 +3,6 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Hosting.Wpf.GenericHost;
-using Microsoft.Extensions.Hosting.Wpf.Internal;
 using Microsoft.Extensions.Hosting.Wpf.Locator;
 
 namespace Microsoft.Extensions.Hosting.Wpf;
@@ -51,7 +50,8 @@ public static partial class WpfHostingExtensions
     {
         ThrowHelper.ThrowIfNull(builder);
 
-        return AddWpfInitialization<TApplication>(builder, (_, context) => context.WpfApplication?.Initialize());
+        builder.Services.AddWpfInitialization<TApplication>();
+        return builder;
     }
 
     /// <summary>
@@ -67,9 +67,9 @@ public static partial class WpfHostingExtensions
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
         ThrowHelper.ThrowIfNull(builder);
-        ThrowHelper.ThrowIfNull(viewModelLocator);
 
-        return builder.UseWpfViewModelLocator<TApplication, TViewModelLocator>(_ => viewModelLocator);
+        builder.Services.AddWpfViewModelLocator<TApplication, TViewModelLocator>(viewModelLocator);
+        return builder;
     }
 
     /// <summary>
@@ -86,28 +86,8 @@ public static partial class WpfHostingExtensions
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
         ThrowHelper.ThrowIfNull(builder);
-        ThrowHelper.ThrowIfNull(viewModelLocatorFunc);
 
-        return AddWpfInitialization<TApplication>(builder, (provider, context) =>
-        {
-            context.WpfApplication?.Initialize();
-            var locator = viewModelLocatorFunc(provider);
-            context.WpfApplication?.InitializeLocator(locator);
-        });
-    }
-
-    private static IHostApplicationBuilder AddWpfInitialization<TApplication>(IHostApplicationBuilder builder, Action<IServiceProvider, IWpfContext<TApplication>> initialize)
-        where TApplication : Application, IApplicationInitializeComponent
-    {
-        foreach (var service in builder.Services)
-        {
-            if (service.ServiceType == typeof(WpfInitialization<TApplication>))
-            {
-                throw new InvalidOperationException($"Do not use .UseWpfInitialization<{typeof(TApplication).Name}> and .UseWpfViewModelLocator<{typeof(TApplication).Name}> together or call them multiple times.");
-            }
-        }
-
-        builder.Services.AddSingleton(new WpfInitialization<TApplication>(initialize));
+        builder.Services.AddWpfViewModelLocator<TApplication, TViewModelLocator>(viewModelLocatorFunc);
         return builder;
     }
 }

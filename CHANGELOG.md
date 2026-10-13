@@ -8,10 +8,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - `IHostApplicationBuilder` overloads for WPF lifetime, application initialization, and view model locator initialization on all target frameworks.
+- `IServiceCollection.AddWpfInitialization<TApplication>()` and `AddWpfViewModelLocator<TApplication, TViewModelLocator>()`, the shared registration used by all builder overloads.
+- `IHostBuilder` overloads of `UseWpfInitialization` and `UseWpfViewModelLocator` that configure initialization before `Build()`, matching the `IHostApplicationBuilder` overloads.
+- Host startup fails with a clear message when initialization is configured but `AddWpf<TApplication>()` was not called.
 - Minimal hosting and explicit `Main` samples using `Host.CreateApplicationBuilder`.
 
 ### Changed
-- All targets use `Microsoft.Extensions.Hosting` 8.0.1. Existing hosting APIs remain available.
+- **Breaking:** All targets now depend on `Microsoft.Extensions.Hosting` 8.0.1 (previously 6.0.0), which raises the minimum `Microsoft.Extensions.*` package versions for consumers. Existing hosting APIs remain available.
+- `IHost.UseWpfViewModelLocator` and `IHostBuilder.UseWpfLifetime(configureOptions)` now throw `ArgumentNullException` for a null locator, factory, or options delegate.
 
 ## [4.1.1] - 2026-10-13
 ### Fixed

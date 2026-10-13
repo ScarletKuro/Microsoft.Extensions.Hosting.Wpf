@@ -19,7 +19,8 @@ public static partial class WpfHostingExtensions
     /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
     public static IHostBuilder UseWpfLifetime(this IHostBuilder hostBuilder, Action<WpfLifeTimeOptions> configureOptions)
     {
-        ThrowHelper.ThrowIfNull(hostBuilder, nameof(hostBuilder));
+        ThrowHelper.ThrowIfNull(hostBuilder);
+        ThrowHelper.ThrowIfNull(configureOptions);
 
         return hostBuilder.ConfigureServices((_, collection) =>
         {
@@ -36,9 +37,61 @@ public static partial class WpfHostingExtensions
     /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
     public static IHostBuilder UseWpfLifetime(this IHostBuilder hostBuilder)
     {
-        ThrowHelper.ThrowIfNull(hostBuilder, nameof(hostBuilder));
+        ThrowHelper.ThrowIfNull(hostBuilder);
 
         return hostBuilder.ConfigureServices((_, collection) => collection.AddSingleton<IHostLifetime, WpfLifetime>());
+    }
+
+    /// <summary>
+    /// Calls <see cref="IApplicationInitialize.Initialize"/> on the WPF UI thread after InitializeComponent and before Run.
+    /// Requires <c>services.AddWpf&lt;TApplication&gt;()</c>.
+    /// </summary>
+    /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+    /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+    /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+    public static IHostBuilder UseWpfInitialization<TApplication>(this IHostBuilder hostBuilder)
+        where TApplication : Application, IApplicationInitializeComponent, IApplicationInitialize
+    {
+        ThrowHelper.ThrowIfNull(hostBuilder);
+
+        return hostBuilder.ConfigureServices((_, collection) => collection.AddWpfInitialization<TApplication>());
+    }
+
+    /// <summary>
+    /// Calls <see cref="IApplicationInitialize.Initialize"/> and <see cref="IViewModelLocatorInitialization{TViewModelLocator}.InitializeLocator"/> on the WPF UI thread before Run.
+    /// Requires <c>services.AddWpf&lt;TApplication&gt;()</c>.
+    /// </summary>
+    /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+    /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
+    /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+    /// <param name="viewModelLocator">Instance of <typeparamref name="TViewModelLocator"/></param>
+    /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+    public static IHostBuilder UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHostBuilder hostBuilder, TViewModelLocator viewModelLocator)
+        where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
+    {
+        ThrowHelper.ThrowIfNull(hostBuilder);
+        ThrowHelper.ThrowIfNull(viewModelLocator);
+
+        return hostBuilder.ConfigureServices((_, collection) => collection.AddWpfViewModelLocator<TApplication, TViewModelLocator>(viewModelLocator));
+    }
+
+    /// <summary>
+    /// Calls <see cref="IApplicationInitialize.Initialize"/> and <see cref="IViewModelLocatorInitialization{TViewModelLocator}.InitializeLocator"/> on the WPF UI thread before Run.
+    /// The locator factory is invoked on that thread with the built host's service provider.
+    /// Requires <c>services.AddWpf&lt;TApplication&gt;()</c>.
+    /// </summary>
+    /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+    /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
+    /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+    /// <param name="viewModelLocatorFunc">Function for creating <typeparamref name="TViewModelLocator"/></param>
+    /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+    public static IHostBuilder UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHostBuilder hostBuilder, Func<IServiceProvider, TViewModelLocator> viewModelLocatorFunc)
+        where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
+    {
+        ThrowHelper.ThrowIfNull(hostBuilder);
+        ThrowHelper.ThrowIfNull(viewModelLocatorFunc);
+
+        return hostBuilder.ConfigureServices((_, collection) => collection.AddWpfViewModelLocator<TApplication, TViewModelLocator>(viewModelLocatorFunc));
     }
 
     /// <summary>
@@ -73,6 +126,7 @@ public static partial class WpfHostingExtensions
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
         ThrowHelper.ThrowIfNull(host);
+        ThrowHelper.ThrowIfNull(viewModelLocator);
 
         WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
         wpfThread.SetPreContextInitialization(context=>
@@ -96,6 +150,7 @@ public static partial class WpfHostingExtensions
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
         ThrowHelper.ThrowIfNull(host);
+        ThrowHelper.ThrowIfNull(viewModelLocatorFunc);
 
         WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
         wpfThread.SetPreContextInitialization(context =>

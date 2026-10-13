@@ -121,6 +121,86 @@ public class ApplicationBuilderTests
         Assert.True(host.Services.GetRequiredService<IOptions<WpfLifeTimeOptions>>().Value.SuppressStatusMessages);
     }
 
+    [Fact]
+    public void HostBuilderInitializationIsRegisteredBeforeBuild()
+    {
+        var calls = 0;
+        using var host = Host.CreateDefaultBuilder()
+            .ConfigureServices(services => services.AddWpf<TestApplication>())
+            .UseWpfViewModelLocator<TestApplication, Locator>(_ =>
+            {
+                calls++;
+                return new Locator();
+            })
+            .Build();
+
+        Assert.NotNull(host.Services.GetRequiredService<IWpfThread<TestApplication>>());
+        Assert.Equal(0, calls);
+        Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<TestApplication>());
+    }
+
+    [Fact]
+    public void HostBuilderDuplicateInitializationIsRejectedOnBuild()
+    {
+        var builder = Host.CreateDefaultBuilder()
+            .ConfigureServices(services => services.AddWpf<TestApplication>())
+            .UseWpfInitialization<TestApplication>()
+            .UseWpfViewModelLocator<TestApplication, Locator>(new Locator());
+
+        Assert.Throws<InvalidOperationException>(() => builder.Build());
+    }
+
+    [Fact]
+    public void ServiceCollectionDuplicateInitializationIsRejected()
+    {
+        var services = new ServiceCollection();
+        services.AddWpfInitialization<TestApplication>();
+
+        Assert.Throws<InvalidOperationException>(() => services.AddWpfInitialization<TestApplication>());
+        Assert.Throws<InvalidOperationException>(() => services.AddWpfViewModelLocator<TestApplication, Locator>(new Locator()));
+        Assert.Throws<InvalidOperationException>(() => services.AddWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
+    }
+
+    [Fact]
+    public async Task InitializationWithoutAddWpfFailsOnStart()
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.UseWpfInitialization<TestApplication>();
+        using var host = builder.Build();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
+        Assert.Contains("AddWpf<TestApplication>()", exception.Message);
+    }
+
+    [Fact]
+    public void NullArgumentsAreRejectedConsistently()
+    {
+        IServiceCollection missingServices = null!;
+        IHostBuilder missingHostBuilder = null!;
+        Assert.Throws<ArgumentNullException>(() => missingServices.AddWpfInitialization<TestApplication>());
+        Assert.Throws<ArgumentNullException>(() => missingServices.AddWpfViewModelLocator<TestApplication, Locator>(new Locator()));
+        Assert.Throws<ArgumentNullException>(() => missingServices.AddWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
+        Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfInitialization<TestApplication>());
+        Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfViewModelLocator<TestApplication, Locator>(new Locator()));
+        Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
+
+        var services = new ServiceCollection();
+        Assert.Throws<ArgumentNullException>(() => services.AddWpfViewModelLocator<TestApplication, Locator>((Locator)null!));
+        Assert.Throws<ArgumentNullException>(() => services.AddWpfViewModelLocator<TestApplication, Locator>((Func<IServiceProvider, Locator>)null!));
+        Assert.Empty(services);
+
+        var hostBuilder = Host.CreateDefaultBuilder();
+        Assert.Throws<ArgumentNullException>(() => hostBuilder.UseWpfLifetime(null!));
+        Assert.Throws<ArgumentNullException>(() => hostBuilder.UseWpfViewModelLocator<TestApplication, Locator>((Locator)null!));
+        Assert.Throws<ArgumentNullException>(() => hostBuilder.UseWpfViewModelLocator<TestApplication, Locator>((Func<IServiceProvider, Locator>)null!));
+
+        using var host = Host.CreateDefaultBuilder()
+            .ConfigureServices(s => s.AddWpf<TestApplication>())
+            .Build();
+        Assert.Throws<ArgumentNullException>(() => host.UseWpfViewModelLocator<TestApplication, Locator>((Locator)null!));
+        Assert.Throws<ArgumentNullException>(() => host.UseWpfViewModelLocator<TestApplication, Locator>((Func<IServiceProvider, Locator>)null!));
+    }
+
     // WPF allows only one Application per AppDomain. Keep all real UI startup in this test.
     // Regressions:
     // - 4.1.0: WPF exiting on its own (Exit -> StopApplication) must not make

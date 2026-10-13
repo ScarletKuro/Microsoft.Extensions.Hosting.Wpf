@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Hosting.Wpf.GenericHost;
 using Microsoft.Extensions.Hosting.Wpf.Internal;
+using Microsoft.Extensions.Hosting.Wpf.Locator;
 
 namespace Microsoft.Extensions.Hosting.Wpf;
 
@@ -49,6 +50,80 @@ public static class ServiceCollectionExtensions
         return services.AddWpfCommonRegistrations<TApplication>();
     }
 
+    /// <summary>
+    /// Calls <see cref="IApplicationInitialize.Initialize"/> on the WPF UI thread after InitializeComponent and before Run.
+    /// Requires <see cref="AddWpf{TApplication}(IServiceCollection)"/> for the same <typeparamref name="TApplication"/>.
+    /// </summary>
+    /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+    /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+    /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddWpfInitialization<TApplication>(this IServiceCollection services)
+        where TApplication : Application, IApplicationInitializeComponent, IApplicationInitialize
+    {
+        ThrowHelper.ThrowIfNull(services);
+
+        return services.AddWpfPreContextInitialization<TApplication>((_, context) => context.WpfApplication?.Initialize());
+    }
+
+    /// <summary>
+    /// Calls <see cref="IApplicationInitialize.Initialize"/> and <see cref="IViewModelLocatorInitialization{TViewModelLocator}.InitializeLocator"/> on the WPF UI thread before Run.
+    /// Requires <see cref="AddWpf{TApplication}(IServiceCollection)"/> for the same <typeparamref name="TApplication"/>.
+    /// </summary>
+    /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+    /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
+    /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+    /// <param name="viewModelLocator">Instance of <typeparamref name="TViewModelLocator"/></param>
+    /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddWpfViewModelLocator<TApplication, TViewModelLocator>(this IServiceCollection services, TViewModelLocator viewModelLocator)
+        where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
+    {
+        ThrowHelper.ThrowIfNull(services);
+        ThrowHelper.ThrowIfNull(viewModelLocator);
+
+        return services.AddWpfViewModelLocator<TApplication, TViewModelLocator>(_ => viewModelLocator);
+    }
+
+    /// <summary>
+    /// Calls <see cref="IApplicationInitialize.Initialize"/> and <see cref="IViewModelLocatorInitialization{TViewModelLocator}.InitializeLocator"/> on the WPF UI thread before Run.
+    /// The locator factory is invoked on that thread with the built host's service provider.
+    /// Requires <see cref="AddWpf{TApplication}(IServiceCollection)"/> for the same <typeparamref name="TApplication"/>.
+    /// </summary>
+    /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+    /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
+    /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+    /// <param name="viewModelLocatorFunc">Function for creating <typeparamref name="TViewModelLocator"/></param>
+    /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddWpfViewModelLocator<TApplication, TViewModelLocator>(this IServiceCollection services, Func<IServiceProvider, TViewModelLocator> viewModelLocatorFunc)
+        where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
+    {
+        ThrowHelper.ThrowIfNull(services);
+        ThrowHelper.ThrowIfNull(viewModelLocatorFunc);
+
+        return services.AddWpfPreContextInitialization<TApplication>((provider, context) =>
+        {
+            context.WpfApplication?.Initialize();
+            var viewModelLocator = viewModelLocatorFunc(provider);
+            context.WpfApplication?.InitializeLocator(viewModelLocator);
+        });
+    }
+
+    private static IServiceCollection AddWpfPreContextInitialization<TApplication>(this IServiceCollection services, Action<IServiceProvider, IWpfContext<TApplication>> initialize)
+        where TApplication : Application, IApplicationInitializeComponent
+    {
+        foreach (var service in services)
+        {
+            if (service.ServiceType == typeof(WpfInitialization<TApplication>))
+            {
+                throw new InvalidOperationException(WpfInitialization<TApplication>.AlreadyConfiguredMessage);
+            }
+        }
+
+        services.AddSingleton(new WpfInitialization<TApplication>(initialize)); //for internal usage only
+        services.AddHostedService<WpfInitializationValidator<TApplication>>();
+
+        return services;
+    }
+
     private static IServiceCollection AddWpfCommonRegistrations<TApplication>(this IServiceCollection services)
         where TApplication : Application, IApplicationInitializeComponent
     {
@@ -58,7 +133,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IWpfContext<TApplication>>(wpfContext);
         services.TryAddSingleton<IWpfContext>(wpfContext);
 
-        //Register WpfThread
+        //Register WpfThread, for internal usage only. Applies initialization registered via AddWpfInitialization / AddWpfViewModelLocator.
         services.TryAddSingleton<WpfThread<TApplication>>(s =>
         {
             var thread = new WpfThread<TApplication>(s, wpfContext);
@@ -69,7 +144,7 @@ public static class ServiceCollectionExtensions
             }
 
             return thread;
-        });  //for internal usage only
+        });
         services.TryAddSingleton<IWpfThread<TApplication>>(s => s.GetRequiredService<WpfThread<TApplication>>());
         services.TryAddSingleton<IWpfThread>(s => s.GetRequiredService<WpfThread<TApplication>>());
 
