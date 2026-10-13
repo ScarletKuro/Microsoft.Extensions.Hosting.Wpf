@@ -16,5 +16,6 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
     <ProjectReference Include="../../src/Microsoft.Extensions.Hosting.Wpf/Microsoft.Extensions.Hosting.Wpf.csproj" />
     <ProjectReference Include="../../src/Microsoft.Extensions.Hosting.Wpf.Threading/Microsoft.Extensions.Hosting.Wpf.Threading.csproj" />
+    <ProjectReference Include="../Microsoft.Extensions.Hosting.Wpf.ScenarioApp/Microsoft.Extensions.Hosting.Wpf.ScenarioApp.csproj" />
   </ItemGroup>
 </Project>
