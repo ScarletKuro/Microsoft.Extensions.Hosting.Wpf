@@ -46,7 +46,7 @@ public static class ServiceCollectionExtensions
             return () => createApplication(provider);
         });
 
-        return services.AddWpfCommonRegistrations<TApplication>(); ;
+        return services.AddWpfCommonRegistrations<TApplication>();
     }
 
     private static IServiceCollection AddWpfCommonRegistrations<TApplication>(this IServiceCollection services)
@@ -59,7 +59,17 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IWpfContext>(wpfContext);
 
         //Register WpfThread
-        services.TryAddSingleton<WpfThread<TApplication>>(s => new WpfThread<TApplication>(s, wpfContext));  //for internal usage only
+        services.TryAddSingleton<WpfThread<TApplication>>(s =>
+        {
+            var thread = new WpfThread<TApplication>(s, wpfContext);
+            var initialization = s.GetService<WpfInitialization<TApplication>>();
+            if (initialization is not null)
+            {
+                thread.SetPreContextInitialization(context => initialization.Initialize(s, context));
+            }
+
+            return thread;
+        });  //for internal usage only
         services.TryAddSingleton<IWpfThread<TApplication>>(s => s.GetRequiredService<WpfThread<TApplication>>());
         services.TryAddSingleton<IWpfThread>(s => s.GetRequiredService<WpfThread<TApplication>>());
 

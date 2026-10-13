@@ -14,19 +14,16 @@ namespace HostingSimple
         /// </summary>
         public static void Main(string[] args)
         {
-            using IHost host = CreateHostBuilder(args)
-                .Build()
-                .UseWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider));
+            var builder = Host.CreateApplicationBuilder(args);
+            ConfigureServices(builder.Services);
+            builder.UseWpfLifetime();
+            builder.UseWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider));
+
+            using IHost host = builder.Build();
             host.Run();
         }
 
-        private static IHostBuilder CreateHostBuilder(string[] args)
-        {
-            return Host.CreateDefaultBuilder(args)
-                .ConfigureServices(ConfigureServices);
-        }
-
-        private static void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services)
+        private static void ConfigureServices(IServiceCollection services)
         {
             services.AddLogging();
             services.AddWpf<App>();

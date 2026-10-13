@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting.Wpf.Locator;
 
 namespace Microsoft.Extensions.Hosting.Wpf;
 
-public static class WpfHostingExtensions
+public static partial class WpfHostingExtensions
 {
     /// <summary>
     /// Listens for Application.Current.Exit to start the shutdown process.
@@ -50,7 +50,7 @@ public static class WpfHostingExtensions
     public static IHost UseWpfInitialization<TApplication>(this IHost host)
         where TApplication : Application, IApplicationInitializeComponent, IApplicationInitialize
     {
-        ThrowHelper.ThrowIfNull(host, nameof(host));
+        ThrowHelper.ThrowIfNull(host);
 
         WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
         wpfThread.SetPreContextInitialization(context =>
@@ -72,7 +72,7 @@ public static class WpfHostingExtensions
     public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost host, TViewModelLocator viewModelLocator)
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
-        ThrowHelper.ThrowIfNull(host, nameof(host));
+        ThrowHelper.ThrowIfNull(host);
 
         WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
         wpfThread.SetPreContextInitialization(context=>
@@ -95,7 +95,7 @@ public static class WpfHostingExtensions
     public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost host, Func<IServiceProvider, TViewModelLocator> viewModelLocatorFunc)
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
-        ThrowHelper.ThrowIfNull(host, nameof(host));
+        ThrowHelper.ThrowIfNull(host);
 
         WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
         wpfThread.SetPreContextInitialization(context =>

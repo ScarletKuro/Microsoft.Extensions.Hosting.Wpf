@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- `IHostApplicationBuilder` overloads for WPF lifetime, application initialization, and view model locator initialization on all target frameworks.
+- Minimal hosting and explicit `Main` samples using `Host.CreateApplicationBuilder`.
+
+### Changed
+- All targets use `Microsoft.Extensions.Hosting` 8.0.1. Existing hosting APIs remain available.
+
 ## [4.1.1] - 2026-10-13
 ### Fixed
 - With `UseWpfLifetime`, closing the WPF application could leave the host running (and the process alive without a window). `Application.Exit` was subscribed in `ApplicationStarted`, which could run before the application was created. The subscription now always happens on the UI thread before `Application.Run()`.
