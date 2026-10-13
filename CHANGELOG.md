@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-10-13
 ### Fixed
 - With `UseWpfLifetime`, closing the WPF application could leave the host running (and the process alive without a window). `Application.Exit` was subscribed in `ApplicationStarted`, which could run before the application was created. The subscription now always happens on the UI thread before `Application.Run()`.
 - An exception while creating or initializing the application (constructor, `InitializeComponent`, `UseWpfInitialization` / `UseWpfViewModelLocator`, the locator factory, or an `IWpfComponent` such as a tray icon) crashed the process from the UI thread without being logged. It now fails `IHost.StartAsync` with the original exception.
@@ -99,7 +100,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 #### Added
 - First release.
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..4.1.0
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..4.1.1
+[4.1.1]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/4.1.0..4.1.1
 [4.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/4.0.0..4.1.0
 [4.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.4.0..4.0.0
 [3.4.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/3.3.0..3.4.0
