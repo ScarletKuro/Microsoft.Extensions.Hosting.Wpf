@@ -8,12 +8,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
-public class WpfHostedService<TApplication>
+internal sealed class WpfHostedService<TApplication>
     : IHostedService where TApplication : Application, IApplicationInitializeComponent
 {
     private readonly ILogger<WpfHostedService<TApplication>> _logger;
-    private readonly IWpfThread<TApplication> _wpfThread;
-    private readonly IWpfContext<TApplication> _wpfContext;
+    private readonly WpfThread<TApplication> _wpfThread;
+    private readonly WpfContext<TApplication> _wpfContext;
 
     /// <summary>
     /// The constructor which takes all the DI objects
@@ -21,7 +21,7 @@ public class WpfHostedService<TApplication>
     /// <param name="logger">ILogger</param>
     /// <param name="wpfThread">WpfThread</param>
     /// <param name="wpfContext">WpfContext</param>
-    public WpfHostedService(ILogger<WpfHostedService<TApplication>> logger, IWpfThread<TApplication> wpfThread, IWpfContext<TApplication> wpfContext)
+    public WpfHostedService(ILogger<WpfHostedService<TApplication>> logger, WpfThread<TApplication> wpfThread, WpfContext<TApplication> wpfContext)
     {
         _logger = logger;
         _wpfThread = wpfThread;
@@ -43,12 +43,7 @@ public class WpfHostedService<TApplication>
 
         // Wait until the application is created and initialized on the UI thread. This makes startup failures fail the host
         // instead of crashing the process, and guarantees the application exists before ApplicationStarted is raised.
-        if (_wpfThread is WpfThread<TApplication> wpfThread)
-        {
-            return WaitAsync(wpfThread.Initialized, cancellationToken);
-        }
-
-        return Task.CompletedTask;
+        return WaitAsync(_wpfThread.Initialized, cancellationToken);
     }
 
     private static async Task WaitAsync(Task task, CancellationToken cancellationToken)

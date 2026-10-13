@@ -9,12 +9,12 @@ public interface IWpfContext
     /// <summary>
     /// Shows if <see cref="WpfLifetime"/> is used.
     /// </summary>
-    bool IsLifetimeLinked { get; internal set; }
+    bool IsLifetimeLinked { get; }
 
     /// <summary>
     /// Shows if WPF is running inside <see cref="Microsoft.Extensions.Hosting"/>
     /// </summary>
-    bool IsRunning { get; internal set; }
+    bool IsRunning { get; }
 
     /// <summary>
     /// Instance of WPF <see cref="Application"/>.

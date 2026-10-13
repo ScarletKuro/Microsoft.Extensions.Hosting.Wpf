@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.Extensions.Hosting.Wpf.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -20,7 +21,7 @@ public class WpfLifetime : IHostLifetime, IDisposable
 
     private IWpfContext WpfContext { get; }
 
-    private WpfLifeTimeOptions Options { get; }
+    private WpfLifetimeOptions Options { get; }
 
     private IHostEnvironment Environment { get; }
 
@@ -32,7 +33,7 @@ public class WpfLifetime : IHostLifetime, IDisposable
 
     public WpfLifetime(
         IWpfContext wpfContext,
-        IOptions<WpfLifeTimeOptions> options,
+        IOptions<WpfLifetimeOptions> options,
         IHostEnvironment environment,
         IHostApplicationLifetime applicationLifetime,
         IOptions<HostOptions> hostOptions)
@@ -42,18 +43,18 @@ public class WpfLifetime : IHostLifetime, IDisposable
 
     public WpfLifetime(
         IWpfContext wpfContext,
-        IOptions<WpfLifeTimeOptions> options,
+        IOptions<WpfLifetimeOptions> options,
         IHostEnvironment environment,
         IHostApplicationLifetime applicationLifetime,
         IOptions<HostOptions> hostOptions,
         ILoggerFactory loggerFactory)
     {
-        ThrowHelper.ThrowIfNull(wpfContext, nameof(wpfContext));
-        ThrowHelper.ThrowIfNull(options, nameof(options));
+        ThrowHelper.ThrowIfNull(wpfContext);
+        ThrowHelper.ThrowIfNull(options);
         ThrowHelper.ThrowIfNull(options.Value, nameof(options));
         ThrowHelper.ThrowIfNull(applicationLifetime);
         ThrowHelper.ThrowIfNull(environment);
-        ThrowHelper.ThrowIfNull(hostOptions, nameof(hostOptions));
+        ThrowHelper.ThrowIfNull(hostOptions);
         ThrowHelper.ThrowIfNull(hostOptions.Value, nameof(hostOptions));
         ThrowHelper.ThrowIfNull(loggerFactory);
 
@@ -68,7 +69,7 @@ public class WpfLifetime : IHostLifetime, IDisposable
     public Task WaitForStartAsync(CancellationToken cancellationToken)
     {
         //Indicate that we are using our custom lifetime
-        WpfContext.IsLifetimeLinked = true;
+        (WpfContext as ILifetimeLinkableWpfContext)?.LinkLifetime();
 
         _applicationStartedRegistration = ApplicationLifetime
             .ApplicationStarted

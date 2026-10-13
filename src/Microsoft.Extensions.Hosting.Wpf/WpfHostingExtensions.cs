@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting.Wpf.Locator;
 
 namespace Microsoft.Extensions.Hosting.Wpf;
 
-public static partial class WpfHostingExtensions
+public static class WpfHostingExtensions
 {
     /// <summary>
     /// Listens for Application.Current.Exit to start the shutdown process.
@@ -17,16 +17,12 @@ public static partial class WpfHostingExtensions
     /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
     /// <param name="configureOptions">The delegate for configuring the <see cref="WpfLifetime"/>.</param>
     /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-    public static IHostBuilder UseWpfLifetime(this IHostBuilder hostBuilder, Action<WpfLifeTimeOptions> configureOptions)
+    public static IHostBuilder UseWpfLifetime(this IHostBuilder hostBuilder, Action<WpfLifetimeOptions> configureOptions)
     {
         ThrowHelper.ThrowIfNull(hostBuilder);
         ThrowHelper.ThrowIfNull(configureOptions);
 
-        return hostBuilder.ConfigureServices((_, collection) =>
-        {
-            collection.AddSingleton<IHostLifetime, WpfLifetime>();
-            collection.Configure(configureOptions);
-        });
+        return hostBuilder.ConfigureServices((_, collection) => collection.AddWpfLifetime(configureOptions));
     }
 
     /// <summary>
@@ -39,7 +35,7 @@ public static partial class WpfHostingExtensions
     {
         ThrowHelper.ThrowIfNull(hostBuilder);
 
-        return hostBuilder.ConfigureServices((_, collection) => collection.AddSingleton<IHostLifetime, WpfLifetime>());
+        return hostBuilder.ConfigureServices((_, collection) => collection.AddWpfLifetime());
     }
 
     /// <summary>

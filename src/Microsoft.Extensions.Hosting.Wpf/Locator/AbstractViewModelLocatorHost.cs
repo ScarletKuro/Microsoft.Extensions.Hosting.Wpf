@@ -4,7 +4,7 @@ using System.Windows;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Locator;
 
-public class AbstractViewModelLocatorHost<TViewModelLocator>
+public abstract class AbstractViewModelLocatorHost<TViewModelLocator>
     where TViewModelLocator : class
 {
     private const string DefaultLocatorName = "Locator";

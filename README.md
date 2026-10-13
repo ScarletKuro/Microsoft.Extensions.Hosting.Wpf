@@ -28,8 +28,10 @@ public partial class App : Application, IApplicationInitializeComponent
 
 ### 2. Create `Program.cs`
 
-Use `Host.CreateApplicationBuilder` from `Microsoft.Extensions.Hosting` 8.0.1. Configure services directly on
-`builder.Services`, and configure WPF before calling `Build()`. As with Microsoft's
+Use `Host.CreateApplicationBuilder` from `Microsoft.Extensions.Hosting` 8.0.1. Everything is
+registered on `builder.Services` before calling `Build()`, so the same calls work with any
+`IHostApplicationBuilder` (`HostApplicationBuilder`, ASP.NET Core's `WebApplicationBuilder`, ...)
+and inside `IHostBuilder.ConfigureServices`. As with Microsoft's
 [Generic Host](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host),
 the built application is still an `IHost`.
 
@@ -43,7 +45,7 @@ public class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services.AddWpf<App>();
-        builder.UseWpfLifetime();
+        builder.Services.AddWpfLifetime();
 
         using IHost host = builder.Build();
         host.Run();
@@ -58,22 +60,17 @@ use the explicit `Main` above and set `StartupObject` as shown in step 3.
 ```csharp
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWpf<App>();
-builder.UseWpfLifetime();
+builder.Services.AddWpfLifetime();
 
 using var host = builder.Build();
 host.Run();
 ```
 
-The extensions accept `IHostApplicationBuilder`, including `HostApplicationBuilder`,
-ASP.NET Core's `WebApplicationBuilder`, and custom builders implementing that interface.
-Keep the concrete builder variable to call its `Build()` method; `IHostApplicationBuilder`
-does not declare `Build()`.
-
 If your application implements `IApplicationInitialize`, add
-`builder.UseWpfInitialization<App>()`. For a view model locator, use this instead:
+`builder.Services.AddWpfInitialization<App>()`. For a view model locator, use this instead:
 
 ```csharp
-builder.UseWpfViewModelLocator<App, IViewModelLocator>(
+builder.Services.AddWpfViewModelLocator<App, IViewModelLocator>(
     provider => new ViewModelLocator(provider));
 ```
 
@@ -83,14 +80,10 @@ host's service provider. Use either initialization extension once per applicatio
 the locator extension also calls `Initialize()`. If `AddWpf<App>()` is missing, host
 startup fails with an `InvalidOperationException`.
 
-The same registrations are available directly on `IServiceCollection`
-(`services.AddWpfInitialization<App>()` / `services.AddWpfViewModelLocator<App, IViewModelLocator>(...)`),
-which is what the builder extensions call.
-
-`UseWpfLifetime(options => options.SuppressStatusMessages = true)` configures lifetime
+`AddWpfLifetime(options => options.SuppressStatusMessages = true)` configures lifetime
 logging. It is optional; without it, WPF continues to use the host's default lifetime.
 
-`IHostBuilder` supports the same extensions, also configured before `Build()`:
+With `IHostBuilder`, use the same `IServiceCollection` extensions or the `Use*` shortcuts:
 
 ```csharp
 using IHost host = Host.CreateDefaultBuilder(args)

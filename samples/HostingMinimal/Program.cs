@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting.Wpf.Core;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWpf<App>();
-builder.UseWpfLifetime();
+builder.Services.AddWpfLifetime();
 
 using var host = builder.Build();
 host.Run();

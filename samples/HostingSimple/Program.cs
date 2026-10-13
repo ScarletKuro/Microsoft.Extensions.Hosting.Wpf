@@ -16,8 +16,8 @@ namespace HostingSimple
         {
             var builder = Host.CreateApplicationBuilder(args);
             ConfigureServices(builder.Services);
-            builder.UseWpfLifetime();
-            builder.UseWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider));
+            builder.Services.AddWpfLifetime();
+            builder.Services.AddWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider));
 
             using IHost host = builder.Build();
             host.Run();

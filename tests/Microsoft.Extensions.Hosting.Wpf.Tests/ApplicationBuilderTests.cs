@@ -21,8 +21,8 @@ public class ApplicationBuilderTests
         foreach (IHostApplicationBuilder builder in new IHostApplicationBuilder[] { genericBuilder, webBuilder })
         {
             builder.Services.AddWpf<TestApplication>();
-            builder.UseWpfInitialization<TestApplication>();
-            Assert.Same(builder, builder.UseWpfLifetime(options => options.SuppressStatusMessages = true));
+            builder.Services.AddWpfInitialization<TestApplication>();
+            Assert.Same(builder.Services, builder.Services.AddWpfLifetime(options => options.SuppressStatusMessages = true));
             Assert.Equal(typeof(WpfLifetime), builder.Services.Last(service => service.ServiceType == typeof(IHostLifetime)).ImplementationType);
         }
 
@@ -31,7 +31,7 @@ public class ApplicationBuilderTests
         foreach (var host in new IHost[] { genericHost, webHost })
         {
             Assert.IsType<WpfLifetime>(host.Services.GetRequiredService<IHostLifetime>());
-            Assert.True(host.Services.GetRequiredService<IOptions<WpfLifeTimeOptions>>().Value.SuppressStatusMessages);
+            Assert.True(host.Services.GetRequiredService<IOptions<WpfLifetimeOptions>>().Value.SuppressStatusMessages);
             Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<TestApplication>());
         }
     }
@@ -43,7 +43,7 @@ public class ApplicationBuilderTests
         var calls = 0;
         var factory = new TrackingServiceProviderFactory();
         ((IHostApplicationBuilder)builder).ConfigureContainer(factory);
-        Assert.Same(builder, builder.UseWpfViewModelLocator<TestApplication, Locator>(_ =>
+        Assert.Same(builder.Services, builder.Services.AddWpfViewModelLocator<TestApplication, Locator>(_ =>
         {
             calls++;
             return new Locator();
@@ -57,16 +57,16 @@ public class ApplicationBuilderTests
     }
 
     [Fact]
-    public void InstanceLocatorAndInitializationReturnTheSameBuilder()
+    public void InstanceLocatorAndInitializationReturnTheSameServices()
     {
         var locatorBuilder = Host.CreateApplicationBuilder();
-        Assert.Same(locatorBuilder, locatorBuilder.UseWpfViewModelLocator<TestApplication, Locator>(new Locator()));
+        Assert.Same(locatorBuilder.Services, locatorBuilder.Services.AddWpfViewModelLocator<TestApplication, Locator>(new Locator()));
         locatorBuilder.Services.AddWpf<TestApplication>();
         using var locatorHost = locatorBuilder.Build();
         Assert.NotNull(locatorHost.Services.GetRequiredService<IWpfThread<TestApplication>>());
 
         var initializationBuilder = Host.CreateApplicationBuilder();
-        Assert.Same(initializationBuilder, initializationBuilder.UseWpfInitialization<TestApplication>());
+        Assert.Same(initializationBuilder.Services, initializationBuilder.Services.AddWpfInitialization<TestApplication>());
         initializationBuilder.Services.AddWpf<TestApplication>();
         using var initializationHost = initializationBuilder.Build();
         Assert.NotNull(initializationHost.Services.GetRequiredService<IWpfThread<TestApplication>>());
@@ -77,34 +77,31 @@ public class ApplicationBuilderTests
     {
         var builder = Host.CreateApplicationBuilder();
         builder.Services.AddWpf<TestApplication>();
-        builder.UseWpfInitialization<TestApplication>();
+        builder.Services.AddWpfInitialization<TestApplication>();
 
-        Assert.Throws<InvalidOperationException>(() => builder.UseWpfInitialization<TestApplication>());
-        Assert.Throws<InvalidOperationException>(() => builder.UseWpfViewModelLocator<TestApplication, Locator>(new Locator()));
+        Assert.Throws<InvalidOperationException>(() => builder.Services.AddWpfInitialization<TestApplication>());
+        Assert.Throws<InvalidOperationException>(() => builder.Services.AddWpfViewModelLocator<TestApplication, Locator>(new Locator()));
         using var host = builder.Build();
         Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<TestApplication>());
 
         var locatorBuilder = Host.CreateApplicationBuilder();
-        locatorBuilder.UseWpfViewModelLocator<TestApplication, Locator>(_ => new Locator());
-        Assert.Throws<InvalidOperationException>(() => locatorBuilder.UseWpfInitialization<TestApplication>());
-        Assert.Throws<InvalidOperationException>(() => locatorBuilder.UseWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
+        locatorBuilder.Services.AddWpfViewModelLocator<TestApplication, Locator>(_ => new Locator());
+        Assert.Throws<InvalidOperationException>(() => locatorBuilder.Services.AddWpfInitialization<TestApplication>());
+        Assert.Throws<InvalidOperationException>(() => locatorBuilder.Services.AddWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
     }
 
     [Fact]
     public void NullArgumentsAreRejectedBeforeServicesAreRegistered()
     {
-        IHostApplicationBuilder missing = null!;
-        Assert.Throws<ArgumentNullException>(() => missing.UseWpfLifetime());
-        Assert.Throws<ArgumentNullException>(() => missing.UseWpfLifetime(_ => { }));
-        Assert.Throws<ArgumentNullException>(() => missing.UseWpfInitialization<TestApplication>());
-        Assert.Throws<ArgumentNullException>(() => missing.UseWpfViewModelLocator<TestApplication, Locator>(new Locator()));
-        Assert.Throws<ArgumentNullException>(() => missing.UseWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
+        IServiceCollection missing = null!;
+        Assert.Throws<ArgumentNullException>(() => missing.AddWpfLifetime());
+        Assert.Throws<ArgumentNullException>(() => missing.AddWpfLifetime(_ => { }));
 
         var builder = Host.CreateApplicationBuilder();
         var count = builder.Services.Count;
-        Assert.Throws<ArgumentNullException>(() => builder.UseWpfLifetime(null!));
-        Assert.Throws<ArgumentNullException>(() => builder.UseWpfViewModelLocator<TestApplication, Locator>((Locator)null!));
-        Assert.Throws<ArgumentNullException>(() => builder.UseWpfViewModelLocator<TestApplication, Locator>((Func<IServiceProvider, Locator>)null!));
+        Assert.Throws<ArgumentNullException>(() => builder.Services.AddWpfLifetime(null!));
+        Assert.Throws<ArgumentNullException>(() => builder.Services.AddWpfViewModelLocator<TestApplication, Locator>((Locator)null!));
+        Assert.Throws<ArgumentNullException>(() => builder.Services.AddWpfViewModelLocator<TestApplication, Locator>((Func<IServiceProvider, Locator>)null!));
         Assert.Equal(count, builder.Services.Count);
     }
 
@@ -118,7 +115,7 @@ public class ApplicationBuilderTests
             .UseWpfViewModelLocator<TestApplication, Locator>(new Locator());
 
         Assert.IsType<WpfLifetime>(host.Services.GetRequiredService<IHostLifetime>());
-        Assert.True(host.Services.GetRequiredService<IOptions<WpfLifeTimeOptions>>().Value.SuppressStatusMessages);
+        Assert.True(host.Services.GetRequiredService<IOptions<WpfLifetimeOptions>>().Value.SuppressStatusMessages);
     }
 
     [Fact]
@@ -165,7 +162,7 @@ public class ApplicationBuilderTests
     public async Task InitializationWithoutAddWpfFailsOnStart()
     {
         var builder = Host.CreateApplicationBuilder();
-        builder.UseWpfInitialization<TestApplication>();
+        builder.Services.AddWpfInitialization<TestApplication>();
         using var host = builder.Build();
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
@@ -217,8 +214,8 @@ public class ApplicationBuilderTests
         builder.Services.AddSingleton(state);
         builder.Services.AddSingleton(locator);
         builder.Services.AddWpf<TestApplication>();
-        builder.UseWpfLifetime(options => options.SuppressStatusMessages = true);
-        builder.UseWpfViewModelLocator<TestApplication, Locator>(provider =>
+        builder.Services.AddWpfLifetime(options => options.SuppressStatusMessages = true);
+        builder.Services.AddWpfViewModelLocator<TestApplication, Locator>(provider =>
         {
             locatorProvider = provider;
             state.Record("Factory");

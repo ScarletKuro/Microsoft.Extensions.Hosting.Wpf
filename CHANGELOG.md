@@ -7,14 +7,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
-- `IHostApplicationBuilder` overloads for WPF lifetime, application initialization, and view model locator initialization on all target frameworks.
-- `IServiceCollection.AddWpfInitialization<TApplication>()` and `AddWpfViewModelLocator<TApplication, TViewModelLocator>()`, the shared registration used by all builder overloads.
-- `IHostBuilder` overloads of `UseWpfInitialization` and `UseWpfViewModelLocator` that configure initialization before `Build()`, matching the `IHostApplicationBuilder` overloads.
+- `IHostApplicationBuilder` / `HostApplicationBuilder` / `WebApplicationBuilder` support through new `IServiceCollection` extensions, used as `builder.Services.Add...()`:
+  - `AddWpfLifetime()` / `AddWpfLifetime(configureOptions)`
+  - `AddWpfInitialization<TApplication>()`
+  - `AddWpfViewModelLocator<TApplication, TViewModelLocator>(viewModelLocator | viewModelLocatorFunc)`
+- `IHostBuilder` overloads of `UseWpfInitialization` and `UseWpfViewModelLocator` that configure initialization before `Build()`.
 - Host startup fails with a clear message when initialization is configured but `AddWpf<TApplication>()` was not called.
 - Minimal hosting and explicit `Main` samples using `Host.CreateApplicationBuilder`.
 
 ### Changed
-- **Breaking:** All targets now depend on `Microsoft.Extensions.Hosting` 8.0.1 (previously 6.0.0), which raises the minimum `Microsoft.Extensions.*` package versions for consumers. Existing hosting APIs remain available.
+- **Breaking:** `Extensions.Hosting.Wpf` now depends on `Microsoft.Extensions.Hosting` 8.0.1 (previously 6.0.0) and `Extensions.Hosting.Wpf.Bootstrap` on `Microsoft.Extensions.Hosting.Abstractions` 8.0.1 (previously 6.0.0), which raises the minimum `Microsoft.Extensions.*` package versions for consumers.
+- **Breaking:** `Extensions.Hosting.Wpf.Threading` now depends on `Microsoft.VisualStudio.Threading` 17.14.15 (previously 17.5.22).
+- **Breaking:** Renamed `WpfLifeTimeOptions` to `WpfLifetimeOptions`.
+- **Breaking:** `AbstractViewModelLocatorHost<TViewModelLocator>` is now `abstract`; derive your locator host from it.
+- **Breaking:** `WpfHostedService<TApplication>` is now internal. It is registered by `AddWpf<TApplication>()`.
+- **Breaking:** `IWpfContext.IsLifetimeLinked` and `IWpfContext.IsRunning` are now get-only (they previously had `internal` setters).
+- **Breaking:** Renamed `Extensions.Hosting.Wpf.Bootstrap`'s `WpfHostingExtensions` to `WpfBootstrapHostingExtensions` to avoid clashing with the main package's class. Extension-method call sites are unaffected.
+- `UseWpfContainerBootstrap` and `AddBootstrap` now throw `ArgumentNullException` for a null container or service collection.
 - `IHost.UseWpfViewModelLocator` and `IHostBuilder.UseWpfLifetime(configureOptions)` now throw `ArgumentNullException` for a null locator, factory, or options delegate.
 
 ## [4.1.1] - 2026-10-13

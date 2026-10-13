@@ -51,6 +51,39 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Uses <see cref="WpfLifetime"/> as the host lifetime: the host stops when the WPF application exits.
+    /// This unblocks extensions like RunAsync and WaitForShutdownAsync.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+    /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddWpfLifetime(this IServiceCollection services)
+    {
+        ThrowHelper.ThrowIfNull(services);
+
+        services.AddSingleton<IHostLifetime, WpfLifetime>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Uses <see cref="WpfLifetime"/> as the host lifetime: the host stops when the WPF application exits.
+    /// This unblocks extensions like RunAsync and WaitForShutdownAsync.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+    /// <param name="configureOptions">The delegate for configuring the <see cref="WpfLifetime"/>.</param>
+    /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
+    public static IServiceCollection AddWpfLifetime(this IServiceCollection services, Action<WpfLifetimeOptions> configureOptions)
+    {
+        ThrowHelper.ThrowIfNull(services);
+        ThrowHelper.ThrowIfNull(configureOptions);
+
+        services.AddWpfLifetime();
+        services.Configure(configureOptions);
+
+        return services;
+    }
+
+    /// <summary>
     /// Calls <see cref="IApplicationInitialize.Initialize"/> on the WPF UI thread after InitializeComponent and before Run.
     /// Requires <see cref="AddWpf{TApplication}(IServiceCollection)"/> for the same <typeparamref name="TApplication"/>.
     /// </summary>
