@@ -199,6 +199,45 @@ public class ScenarioTests
         }
     }
 
+    public static TheoryData<BuilderKind, LifetimeKind, FailureKind> AllCustomFactoryScenarios()
+    {
+        var data = new TheoryData<BuilderKind, LifetimeKind, FailureKind>();
+        foreach (var builder in Enum.GetValues<BuilderKind>())
+        foreach (var lifetime in Enum.GetValues<LifetimeKind>())
+        foreach (var failure in new[] { FailureKind.None, FailureKind.ApplicationStartup })
+        {
+            data.Add(builder, lifetime, failure);
+        }
+
+        return data;
+    }
+
+    // AddWpf(factory) whose factory queues dispatcher work (at the startup operation's priority) before constructing the
+    // application: that work runs first and must not be mistaken for the application's startup.
+    [Theory]
+    [MemberData(nameof(AllCustomFactoryScenarios))]
+    public async Task CustomFactoryQueuingDispatcherWorkDoesNotEndStartupEarly(BuilderKind builder, LifetimeKind lifetime, FailureKind failure)
+    {
+        var result = await RunAsync(new Scenario(builder, lifetime, InitializationKind.None, StopKind.HostStop, failure, CustomFactory: true));
+
+        result.Assert(result.IndexOf("FactoryQueuedWork") < result.IndexOf("Startup"), "The factory's queued work did not run before the application's startup.");
+        result.AssertInfo("UiThreadAliveAfterRun", "False");
+        if (failure == FailureKind.None)
+        {
+            result.AssertInfo("Completed", "True");
+            result.Assert(result.ExitCode == 0, $"Process exit code was {result.ExitCode}, expected 0.");
+            result.Assert(result.IndexOf("HostStarted") > result.IndexOf("StartupReturned"), "The host reported started while OnStartup was still running.");
+            AssertCleanupBeforeServicesDisposed(result);
+        }
+        else
+        {
+            // OnStartup throws after a nested dispatcher loop: host startup fails instead of the process crashing.
+            result.Assert(result.ExitCode == Scenario.HostFailedExitCode, $"Process exit code was {result.ExitCode}, expected {Scenario.HostFailedExitCode}.");
+            result.Assert(result.Info("RunFailed").Contains(Scenario.StartupFailureMessage, StringComparison.Ordinal), "host.Run() did not fail with the OnStartup exception.");
+            result.Assert(result.Events.All(e => e.Name != "HostStarted"), "The host reported it started although OnStartup failed.");
+        }
+    }
+
     private static async Task<ScenarioResult> RunAsync(Scenario scenario)
     {
         var executable = Path.Combine(AppContext.BaseDirectory, "Microsoft.Extensions.Hosting.Wpf.ScenarioApp.exe");

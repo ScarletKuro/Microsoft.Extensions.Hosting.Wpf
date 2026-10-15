@@ -70,7 +70,8 @@ public enum StopKind
 }
 
 /// <summary>One combination run by the scenario app.</summary>
-public sealed record Scenario(BuilderKind Builder, LifetimeKind Lifetime, InitializationKind Initialization, StopKind Stop, FailureKind Failure = FailureKind.None)
+/// <param name="CustomFactory">Creates the application with <c>AddWpf(factory)</c>, which queues dispatcher work before constructing it.</param>
+public sealed record Scenario(BuilderKind Builder, LifetimeKind Lifetime, InitializationKind Initialization, StopKind Stop, FailureKind Failure = FailureKind.None, bool CustomFactory = false)
 {
     /// <summary>Exit code passed to <c>Application.Shutdown</c> in <see cref="StopKind.WpfExit"/>.</summary>
     public const int ApplicationExitCode = 3;
@@ -83,7 +84,7 @@ public sealed record Scenario(BuilderKind Builder, LifetimeKind Lifetime, Initia
 
     /// <summary>Formats the scenario as command line arguments.</summary>
     public string[] ToArguments() =>
-        new[] { Builder.ToString(), Lifetime.ToString(), Initialization.ToString(), Stop.ToString(), Failure.ToString() };
+        new[] { Builder.ToString(), Lifetime.ToString(), Initialization.ToString(), Stop.ToString(), Failure.ToString(), CustomFactory ? "CustomFactory" : "DefaultFactory" };
 
     /// <summary>Parses the arguments produced by <see cref="ToArguments"/>.</summary>
     public static Scenario Parse(string[] arguments)
@@ -93,6 +94,7 @@ public sealed record Scenario(BuilderKind Builder, LifetimeKind Lifetime, Initia
             Enum.Parse<LifetimeKind>(arguments[1]),
             Enum.Parse<InitializationKind>(arguments[2]),
             Enum.Parse<StopKind>(arguments[3]),
-            Enum.Parse<FailureKind>(arguments[4]));
+            Enum.Parse<FailureKind>(arguments[4]),
+            arguments.Length > 5 && arguments[5] == "CustomFactory");
     }
 }

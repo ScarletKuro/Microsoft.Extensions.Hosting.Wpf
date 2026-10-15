@@ -219,14 +219,18 @@ internal sealed class WpfThread<TApplication>
     }
 
     /// <summary>
-    /// Tracks the dispatcher operation that runs the application's startup (Startup event, OnStartup).
-    /// Application's constructor queues it with the highest priority, so it is the first operation to run. Its completion,
-    /// not dispatcher priority, marks startup as done: OnStartup may run nested dispatcher loops (e.g. ShowDialog), in which
-    /// any other queued operation would run while OnStartup has not returned yet.
+    /// Identifies the dispatcher operation that runs the application's startup (Startup event, OnStartup): Application's
+    /// constructor sets Application.Current and then queues it, so it is the first operation queued once Application.Current
+    /// exists. Work a custom application factory queues before constructing the application is ignored (Current is still null).
+    /// The completion of that operation, not dispatcher priority or order, marks startup as done: OnStartup may run nested
+    /// dispatcher loops (e.g. ShowDialog), in which any other queued operation would run while OnStartup has not returned yet.
     /// </summary>
-    private void OnDispatcherOperationStarted(object? sender, DispatcherHookEventArgs e)
+    private void OnDispatcherOperationPosted(object? sender, DispatcherHookEventArgs e)
     {
-        _startupOperation ??= e.Operation;
+        if (_startupOperation is null && Application.Current is not null)
+        {
+            _startupOperation = e.Operation;
+        }
     }
 
     private void OnDispatcherOperationCompleted(object? sender, DispatcherHookEventArgs e)
@@ -238,7 +242,6 @@ internal sealed class WpfThread<TApplication>
         }
 
         var hooks = e.Dispatcher.Hooks;
-        hooks.OperationStarted -= OnDispatcherOperationStarted;
         hooks.OperationCompleted -= OnDispatcherOperationCompleted;
         OnApplicationStarted();
     }
@@ -277,11 +280,25 @@ internal sealed class WpfThread<TApplication>
         SynchronizationContext.SetSynchronizationContext(synchronizationContext);
         _synchronizationContext = synchronizationContext;
 
-        // Before the application is created, so its startup operation is the first one these hooks see.
-        dispatcher.Hooks.OperationStarted += OnDispatcherOperationStarted;
+        // Before the application is created, to see its constructor queue the startup operation.
+        dispatcher.Hooks.OperationPosted += OnDispatcherOperationPosted;
         dispatcher.Hooks.OperationCompleted += OnDispatcherOperationCompleted;
 
-        var application = CreateApplication();
+        TApplication application;
+        try
+        {
+            application = CreateApplication();
+        }
+        finally
+        {
+            dispatcher.Hooks.OperationPosted -= OnDispatcherOperationPosted;
+        }
+
+        if (_startupOperation is null)
+        {
+            // Not expected with WPF's Application: fail loudly instead of reporting startup at a wrong time.
+            throw new InvalidOperationException($"Could not identify the startup operation of {typeof(TApplication).Name}.");
+        }
 
         // Register to the WPF application exit to stop the host application, whatever host lifetime is used.
         // This must happen here, on the UI thread before Run(): WpfLifetime used to subscribe in ApplicationStarted instead,

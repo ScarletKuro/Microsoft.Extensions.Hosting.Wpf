@@ -1,3 +1,4 @@
+using System.Windows.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -117,6 +118,16 @@ public static class Program
         if (scenario.Failure == FailureKind.ApplicationFactory)
         {
             services.AddWpf<ScenarioApplication>(_ => throw new InvalidOperationException(Scenario.StartupFailureMessage));
+        }
+        else if (scenario.CustomFactory)
+        {
+            services.AddWpf(provider =>
+            {
+                // Queued before the application exists, at the same (highest) priority as WPF's own startup operation,
+                // so it runs first: it must not be mistaken for the application's startup.
+                Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => log.Event("FactoryQueuedWork")));
+                return ActivatorUtilities.CreateInstance<ScenarioApplication>(provider);
+            });
         }
         else
         {
