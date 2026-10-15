@@ -20,13 +20,18 @@ public class ApplicationBuilderTests
     {
         var genericBuilder = Host.CreateApplicationBuilder();
         var webBuilder = WebApplication.CreateBuilder();
+#if NET8_0_OR_GREATER
+        // WebApplicationBuilder implements IHostApplicationBuilder from ASP.NET Core 8.
+        Assert.IsAssignableFrom<IHostApplicationBuilder>(webBuilder);
+#endif
 
-        foreach (IHostApplicationBuilder builder in new IHostApplicationBuilder[] { genericBuilder, webBuilder })
+        // builder.Services is the common API of every builder, on every target.
+        foreach (var services in new[] { genericBuilder.Services, webBuilder.Services })
         {
-            builder.Services.AddWpf<TestApplication>();
-            builder.Services.AddWpfInitialization<TestApplication>();
-            Assert.Same(builder.Services, builder.Services.AddWpfLifetime(options => options.SuppressStatusMessages = true));
-            Assert.Equal(typeof(WpfLifetime), builder.Services.Last(service => service.ServiceType == typeof(IHostLifetime)).ImplementationType);
+            services.AddWpf<TestApplication>();
+            services.AddWpfInitialization<TestApplication>();
+            Assert.Same(services, services.AddWpfLifetime(options => options.SuppressStatusMessages = true));
+            Assert.Equal(typeof(WpfLifetime), services.Last(service => service.ServiceType == typeof(IHostLifetime)).ImplementationType);
         }
 
         using var genericHost = genericBuilder.Build();

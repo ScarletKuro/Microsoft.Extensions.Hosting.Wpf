@@ -29,8 +29,9 @@ public partial class App : Application, IApplicationInitializeComponent
 ### 2. Create `Program.cs`
 
 Use `Host.CreateApplicationBuilder` from `Microsoft.Extensions.Hosting` 8.0.1. Everything is
-registered on `builder.Services` before calling `Build()`, so the same calls work with any
-`IHostApplicationBuilder` (`HostApplicationBuilder`, ASP.NET Core's `WebApplicationBuilder`, ...)
+registered on `builder.Services` before calling `Build()`, so the same calls work with
+`HostApplicationBuilder`, ASP.NET Core's `WebApplicationBuilder` (on every supported .NET version,
+although it implements `IHostApplicationBuilder` only from .NET 8), any other `IHostApplicationBuilder`,
 and inside `IHostBuilder.ConfigureServices`. As with Microsoft's
 [Generic Host](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host),
 the built application is still an `IHost`.

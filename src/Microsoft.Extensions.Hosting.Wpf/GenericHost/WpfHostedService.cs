@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by dependency injection (AddHostedService).")]
 internal sealed class WpfHostedService<TApplication>
     : IHostedService where TApplication : Application, IApplicationInitializeComponent
 {

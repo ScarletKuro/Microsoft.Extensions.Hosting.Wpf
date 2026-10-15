@@ -2,11 +2,12 @@
   <!-- A real WPF host started in its own process by ScenarioTests: WPF allows only one Application per process. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net8.0-windows;net9.0-windows;net10.0-windows</TargetFrameworks>
+    <TargetFrameworks>net6.0-windows;net7.0-windows;net8.0-windows;net9.0-windows;net10.0-windows</TargetFrameworks>
     <UseWPF>true</UseWPF>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <IsPackable>false</IsPackable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
     <!-- Scenarios drive the WPF Dispatcher directly on purpose (VSTHRD analyzers come with the Threading package). -->
     <NoWarn>$(NoWarn);VSTHRD001;VSTHRD110</NoWarn>
   </PropertyGroup>

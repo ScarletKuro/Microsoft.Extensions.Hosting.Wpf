@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Migrating from 4.x
+Most applications only need the first two steps. Every other break has a one-line fix:
+
+| If you… | Do this | Why it changed |
+|---|---|---|
+| target `netcoreapp3.1` | Move to .NET 6+ (or .NET Framework 4.6.2 / 4.8), or stay on 4.x | Out of support since 2022, and `Microsoft.Extensions.*` 8.x does not support it (build warnings in your app) |
+| reference `Microsoft.Extensions.*` 6.x/7.x | Update to 8.x | `IHostApplicationBuilder` (the new API) only exists from `Microsoft.Extensions.Hosting.Abstractions` 8.0 |
+| reference `Microsoft.VisualStudio.Threading` < 17.12 (Threading package) | Update; review new `VSTHRD` analyzer warnings once, or tune them in `.editorconfig` | 17.12 is the newest release that still supports .NET 6 / 7; the analyzers come with it |
+| name `WpfLifeTimeOptions` explicitly | Rename to `WpfLifetimeOptions` (`options => …` lambdas are unaffected) | Consistent with `WpfLifetime` / `IHostLifetime` |
+| instantiate `AbstractViewModelLocatorHost<T>` directly | Derive a class from it (the samples already do) | It is a base class; the name already said so |
+| reference `WpfHostedService<TApplication>` | Remove it; `AddWpf<TApplication>()` registers it | Implementation detail tied to internal types |
+| use `IWpfContext.IsLifetimeLinked` | Check `services.GetService<IHostLifetime>() is WpfLifetime` | No longer affects behavior since 4.1.1 |
+| construct `WpfLifetime` yourself | Drop the `IWpfContext` argument | It was unused |
+| call `Extensions.Hosting.Wpf.Bootstrap.WpfHostingExtensions` statically | Use `WpfBootstrapHostingExtensions` (extension-method calls are unaffected) | Clashed with the main package's `WpfHostingExtensions` |
+| call `AddWpf` for two different application types | Register one application | WPF allows only one `Application` per process; this always failed at runtime |
+
 ### Added
 - `IHostApplicationBuilder` / `HostApplicationBuilder` / `WebApplicationBuilder` support through new `IServiceCollection` extensions, used as `builder.Services.Add...()`:
   - `AddWpfLifetime()` / `AddWpfLifetime(configureOptions)`
@@ -16,8 +32,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Minimal hosting and explicit `Main` samples using `Host.CreateApplicationBuilder`.
 
 ### Changed
+- **Breaking:** Removed the `netcoreapp3.1` target from all packages. It is out of support and `Microsoft.Extensions.*` 8.x does not support it (it produced a "doesn't support" build warning in consuming apps). Supported: .NET Framework 4.6.2 / 4.8 and .NET 6, 7, 8, 9 and 10, all covered by the tests. Applications on .NET Core 3.1 can stay on 4.x.
 - **Breaking:** `Extensions.Hosting.Wpf` now depends on `Microsoft.Extensions.Hosting` 8.0.1 (previously 6.0.0) and `Extensions.Hosting.Wpf.Bootstrap` on `Microsoft.Extensions.Hosting.Abstractions` 8.0.1 (previously 6.0.0), which raises the minimum `Microsoft.Extensions.*` package versions for consumers.
-- **Breaking:** `Extensions.Hosting.Wpf.Threading` now depends on `Microsoft.VisualStudio.Threading` 17.14.15 (previously 17.5.22).
+- **Breaking:** `Extensions.Hosting.Wpf.Threading` now depends on `Microsoft.VisualStudio.Threading` 17.12.19 (previously 17.5.22), the newest release that still supports .NET 6 / 7 (17.13+ dropped them). Its `VSTHRD` analyzers flow to consuming projects (as before), so newer rules may report new warnings. Applications can reference a newer version themselves.
 - **Breaking:** Renamed `WpfLifeTimeOptions` to `WpfLifetimeOptions`.
 - **Breaking:** `AbstractViewModelLocatorHost<TViewModelLocator>` is now `abstract`; derive your locator host from it.
 - **Breaking:** `WpfHostedService<TApplication>` is now internal. It is registered by `AddWpf<TApplication>()`.
@@ -36,7 +53,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - `AddThreadSwitching`: `JoinableTaskFactory` / `JoinableTaskContext` can now be resolved before the WPF UI thread starts, e.g. by a hosted service constructor. Previously this threw "WPF Thread was not started."
-- With `UseWpfLifetime`, the exit code passed to `Application.Shutdown(exitCode)` was reset to 0 when the process exited. `WpfLifetime` no longer overrides `Environment.ExitCode` (a `ConsoleLifetime` SIGTERM workaround that does not apply to WPF).
+- With `UseWpfLifetime`, the exit code passed to `Application.Shutdown(exitCode)` was reset to 0 when the process exited, in applications that do not dispose the host (`host.Run()` does). `WpfLifetime` no longer overrides `Environment.ExitCode` (a `ConsoleLifetime` SIGTERM workaround that does not apply to WPF).
 - If a hosted service failed to start after WPF had started, the host was disposed but the WPF application kept running, and closing it later crashed with `ObjectDisposedException`. Disposing the host now shuts down a still running WPF application and waits for the UI thread.
 - `AddWpfInitialization` / `AddWpfViewModelLocator` for a different application type than `AddWpf<TApplication>()` is now rejected at registration (in either order). Previously the mismatch was detected only after the registered application had already started.
 

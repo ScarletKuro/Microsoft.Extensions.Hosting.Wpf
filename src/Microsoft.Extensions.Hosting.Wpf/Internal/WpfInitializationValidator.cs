@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,6 +13,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 /// </summary>
 /// <remarks>This type is only used inside the library.</remarks>
 /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by dependency injection (AddHostedService).")]
 internal sealed class WpfInitializationValidator<TApplication>
     : IHostedService where TApplication : Application, IApplicationInitializeComponent
 {
