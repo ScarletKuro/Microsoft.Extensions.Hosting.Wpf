@@ -14,9 +14,13 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 /// <remarks>This type is only used inside the library.</remarks>
 /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
 internal sealed class WpfThread<TApplication>
-    : IWpfThread<TApplication> where TApplication : Application, IApplicationInitializeComponent
+    : IWpfThread<TApplication>, IDisposable where TApplication : Application, IApplicationInitializeComponent
 {
+    // How long disposing the host waits for a still running WPF application to shut down.
+    private const int DisposeShutdownTimeoutMilliseconds = 10_000;
+
     private readonly IServiceProvider _serviceProvider;
+    private volatile bool _disposed;
     private readonly WpfContext<TApplication> _wpfContext;
     private Action<WpfContext<TApplication>>? _preContextInitialization;
     private bool _initializationLocked;
@@ -65,7 +69,8 @@ internal sealed class WpfThread<TApplication>
     /// <inheritdoc />
     public void HandleApplicationExit()
     {
-        if (!_wpfContext.IsRunning)
+        // After Dispose the host and its service provider are gone; WPF is being shut down by Dispose itself.
+        if (_disposed || !_wpfContext.IsRunning)
         {
             return;
         }
@@ -77,6 +82,38 @@ internal sealed class WpfThread<TApplication>
 
         var applicationLifeTime = _serviceProvider.GetService<IHostApplicationLifetime>();
         applicationLifeTime?.StopApplication();
+    }
+
+    /// <summary>
+    /// Called by the DI container when the host (its service provider) is disposed; explicit so only the container calls it.
+    /// Normally WPF has already exited by then.
+    /// If it still runs, the host never stopped it: a hosted service started after <see cref="GenericHost.WpfHostedService{TApplication}"/>
+    /// failed, so StopAsync was not called. No UI thread may outlive the host, so shut WPF down and wait for it.
+    /// </summary>
+    void IDisposable.Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        if (!_wpfContext.IsRunning || _wpfContext.WpfApplication is not { } application)
+        {
+            return;
+        }
+
+        var dispatcher = application.Dispatcher;
+        if (dispatcher.CheckAccess())
+        {
+            // Disposed from the UI thread itself: it cannot wait for its own end.
+            application.Shutdown();
+            return;
+        }
+
+        // Ignored if WPF is already shutting down; the dispatcher then aborts the operation.
+        _ = dispatcher.InvokeAsync(() => application.Shutdown());
+        MainThread.Join(DisposeShutdownTimeoutMilliseconds);
     }
 
     /// <summary>

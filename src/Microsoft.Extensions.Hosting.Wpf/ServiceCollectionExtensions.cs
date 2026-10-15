@@ -150,6 +150,8 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddWpfPreContextInitialization<TApplication>(this IServiceCollection services, Action<IServiceProvider, IWpfContext<TApplication>> initialize)
         where TApplication : Application, IApplicationInitializeComponent
     {
+        EnsureInitializationMatchesWpfApplication<TApplication>(services);
+
         foreach (var service in services)
         {
             if (service.ServiceType == typeof(WpfInitialization<TApplication>))
@@ -176,8 +178,35 @@ public static class ServiceCollectionExtensions
                 var existingApplication = existing.GetType().GetGenericArguments()[0].Name;
                 throw new InvalidOperationException($"AddWpf<{existingApplication}>() was already called. Only one WPF application can be hosted per process, so AddWpf<{typeof(TApplication).Name}>() is not allowed.");
             }
+
+            // Initialization registered first for another application (AddWpfInitialization<B>() then AddWpf<A>()).
+            if (InitializationApplicationType(service) is { } initializationApplication && initializationApplication != typeof(TApplication))
+            {
+                throw new InvalidOperationException(MismatchedInitializationMessage(initializationApplication, typeof(TApplication)));
+            }
         }
     }
+
+    private static void EnsureInitializationMatchesWpfApplication<TApplication>(IServiceCollection services)
+        where TApplication : Application, IApplicationInitializeComponent
+    {
+        // AddWpf<A>() then AddWpfInitialization<B>(): reject now, before the host starts A.
+        foreach (var service in services)
+        {
+            if (service.ServiceType == typeof(IWpfContext) && service.ImplementationInstance is IWpfContext existing && existing is not WpfContext<TApplication>)
+            {
+                throw new InvalidOperationException(MismatchedInitializationMessage(typeof(TApplication), existing.GetType().GetGenericArguments()[0]));
+            }
+        }
+    }
+
+    private static Type? InitializationApplicationType(ServiceDescriptor service) =>
+        service.ServiceType.IsGenericType && service.ServiceType.GetGenericTypeDefinition() == typeof(WpfInitialization<>)
+            ? service.ServiceType.GetGenericArguments()[0]
+            : null;
+
+    private static string MismatchedInitializationMessage(Type initializationApplication, Type wpfApplication) =>
+        $"WPF initialization is configured for {initializationApplication.Name}, but the WPF application is {wpfApplication.Name} (AddWpf<{wpfApplication.Name}>()). Use the same application type.";
 
     private static IServiceCollection AddWpfCommonRegistrations<TApplication>(this IServiceCollection services)
         where TApplication : Application, IApplicationInitializeComponent

@@ -33,6 +33,21 @@ public enum InitializationKind
     Locator,
     /// <summary>View model locator factory, configured with <c>host.UseWpfViewModelLocator</c> after <c>Build()</c>.</summary>
     LocatorPostBuild,
+    /// <summary>View model locator instance, configured before <c>Build()</c>.</summary>
+    LocatorInstance,
+    /// <summary>View model locator instance, configured with <c>host.UseWpfViewModelLocator</c> after <c>Build()</c>.</summary>
+    LocatorInstancePostBuild,
+}
+
+/// <summary>What fails during host startup, if anything.</summary>
+public enum FailureKind
+{
+    /// <summary>Nothing fails.</summary>
+    None,
+    /// <summary>The WPF application factory throws, before the application exists.</summary>
+    ApplicationFactory,
+    /// <summary>A hosted service registered after <c>AddWpf</c> throws in <c>StartAsync</c>, after WPF has started.</summary>
+    LaterHostedService,
 }
 
 /// <summary>What ends the application once it runs.</summary>
@@ -49,7 +64,7 @@ public enum StopKind
 }
 
 /// <summary>One combination run by the scenario app.</summary>
-public sealed record Scenario(BuilderKind Builder, LifetimeKind Lifetime, InitializationKind Initialization, StopKind Stop, bool FailStartup)
+public sealed record Scenario(BuilderKind Builder, LifetimeKind Lifetime, InitializationKind Initialization, StopKind Stop, FailureKind Failure = FailureKind.None)
 {
     /// <summary>Exit code passed to <c>Application.Shutdown</c> in <see cref="StopKind.WpfExit"/>.</summary>
     public const int ApplicationExitCode = 3;
@@ -57,20 +72,12 @@ public sealed record Scenario(BuilderKind Builder, LifetimeKind Lifetime, Initia
     /// <summary>Process exit code when <c>host.Run()</c> throws.</summary>
     public const int HostFailedExitCode = 90;
 
-    /// <summary>Message of the exception thrown by the application factory when <see cref="FailStartup"/> is set.</summary>
+    /// <summary>Message of the exception thrown for <see cref="Failure"/>.</summary>
     public const string StartupFailureMessage = "Scenario startup failure";
 
     /// <summary>Formats the scenario as command line arguments.</summary>
-    public string[] ToArguments()
-    {
-        var arguments = new List<string> { Builder.ToString(), Lifetime.ToString(), Initialization.ToString(), Stop.ToString() };
-        if (FailStartup)
-        {
-            arguments.Add("FailStartup");
-        }
-
-        return arguments.ToArray();
-    }
+    public string[] ToArguments() =>
+        new[] { Builder.ToString(), Lifetime.ToString(), Initialization.ToString(), Stop.ToString(), Failure.ToString() };
 
     /// <summary>Parses the arguments produced by <see cref="ToArguments"/>.</summary>
     public static Scenario Parse(string[] arguments)
@@ -80,6 +87,6 @@ public sealed record Scenario(BuilderKind Builder, LifetimeKind Lifetime, Initia
             Enum.Parse<LifetimeKind>(arguments[1]),
             Enum.Parse<InitializationKind>(arguments[2]),
             Enum.Parse<StopKind>(arguments[3]),
-            arguments.Length > 4 && arguments[4] == "FailStartup");
+            Enum.Parse<FailureKind>(arguments[4]));
     }
 }

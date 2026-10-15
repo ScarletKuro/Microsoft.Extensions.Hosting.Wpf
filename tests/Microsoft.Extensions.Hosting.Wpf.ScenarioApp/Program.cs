@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.Extensions.Hosting.Wpf.Threading;
 using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 
 namespace Microsoft.Extensions.Hosting.Wpf.ScenarioApp;
@@ -33,10 +34,16 @@ public static class Program
         {
             log.Info("RunFailed", $"{exception.GetType().Name}: {exception.Message}");
             Environment.ExitCode = Scenario.HostFailedExitCode;
+        }
+
+        // Unstarted (startup failed before the UI thread started) or ended: no UI thread may outlive the host.
+        log.Info("UiThreadEnded", (thread.MainThread.ThreadState & ThreadState.Unstarted) != 0 || thread.MainThread.Join(TimeSpan.FromSeconds(10)));
+        log.Info("IsRunning", context.IsRunning);
+        if (Environment.ExitCode == Scenario.HostFailedExitCode)
+        {
             return;
         }
 
-        log.Info("UiThreadEnded", thread.MainThread.Join(TimeSpan.FromSeconds(10)));
         log.Info("IsRunning", context.IsRunning);
         log.Info("Completed", true);
     }
@@ -61,6 +68,10 @@ public static class Program
                 else if (scenario.Initialization == InitializationKind.Locator)
                 {
                     hostBuilder.UseWpfViewModelLocator<ScenarioApplication, ScenarioLocator>(provider => CreateLocator(provider, log));
+                }
+                else if (scenario.Initialization == InitializationKind.LocatorInstance)
+                {
+                    hostBuilder.UseWpfViewModelLocator<ScenarioApplication, ScenarioLocator>(new ScenarioLocator(LocatorInstanceSource));
                 }
 
                 return ConfigurePostBuild(hostBuilder.Build(), scenario, log);
@@ -90,7 +101,7 @@ public static class Program
     {
         services.AddSingleton(log);
         services.AddSingleton(scenario);
-        if (scenario.FailStartup)
+        if (scenario.Failure == FailureKind.ApplicationFactory)
         {
             services.AddWpf<ScenarioApplication>(_ => throw new InvalidOperationException(Scenario.StartupFailureMessage));
         }
@@ -100,7 +111,22 @@ public static class Program
         }
 
         services.AddWpfTrayIcon<ScenarioTrayIcon>();
+        // Both overloads; JoinableTaskFactory is constructor-injected into ScenarioDriver before the UI thread starts.
+        if (scenario.Lifetime == LifetimeKind.Wpf)
+        {
+            services.AddThreadSwitching<ScenarioApplication>();
+        }
+        else
+        {
+            services.AddThreadSwitching();
+        }
+
         services.AddHostedService<ScenarioDriver>();
+        if (scenario.Failure == FailureKind.LaterHostedService)
+        {
+            // Registered after AddWpf, so it starts after WPF is already running.
+            services.AddHostedService<FailingHostedService>();
+        }
     }
 
     // IHostApplicationBuilder: everything is registered on builder.Services before Build().
@@ -119,6 +145,10 @@ public static class Program
         {
             services.AddWpfViewModelLocator<ScenarioApplication, ScenarioLocator>(provider => CreateLocator(provider, log));
         }
+        else if (scenario.Initialization == InitializationKind.LocatorInstance)
+        {
+            services.AddWpfViewModelLocator<ScenarioApplication, ScenarioLocator>(new ScenarioLocator(LocatorInstanceSource));
+        }
     }
 
     // Post-build IHost extensions, available for every builder.
@@ -132,14 +162,43 @@ public static class Program
         {
             host.UseWpfViewModelLocator<ScenarioApplication, ScenarioLocator>(provider => CreateLocator(provider, log));
         }
+        else if (scenario.Initialization == InitializationKind.LocatorInstancePostBuild)
+        {
+            host.UseWpfViewModelLocator<ScenarioApplication, ScenarioLocator>(new ScenarioLocator(LocatorInstanceSource));
+        }
 
         return host;
     }
+
+    /// <summary><see cref="ScenarioLocator.Source"/> of a locator created by the factory overloads.</summary>
+    public const string LocatorFactorySource = "factory";
+
+    /// <summary><see cref="ScenarioLocator.Source"/> of the instance passed to the instance overloads.</summary>
+    public const string LocatorInstanceSource = "instance";
 
     private static ScenarioLocator CreateLocator(IServiceProvider provider, ScenarioLog log)
     {
         // The factory receives the host's root provider.
         log.Event("LocatorFactory", provider.GetRequiredService<ScenarioLog>() == log);
-        return new ScenarioLocator();
+        return new ScenarioLocator(LocatorFactorySource);
     }
+}
+
+/// <summary>A hosted service registered after AddWpf whose start fails while WPF is already running.</summary>
+public sealed class FailingHostedService : IHostedService
+{
+    private readonly ScenarioLog _log;
+
+    public FailingHostedService(ScenarioLog log)
+    {
+        _log = log;
+    }
+
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        _log.Event("FailingHostedServiceStarting");
+        throw new InvalidOperationException(Scenario.StartupFailureMessage);
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

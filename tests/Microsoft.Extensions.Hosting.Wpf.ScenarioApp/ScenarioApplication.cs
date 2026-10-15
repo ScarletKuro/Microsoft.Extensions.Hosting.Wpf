@@ -5,8 +5,8 @@ using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
 
 namespace Microsoft.Extensions.Hosting.Wpf.ScenarioApp;
 
-/// <summary>View model locator passed to <see cref="ScenarioApplication.InitializeLocator"/>.</summary>
-public sealed class ScenarioLocator;
+/// <summary>View model locator passed to <see cref="ScenarioApplication.InitializeLocator"/>; <paramref name="Source"/> tells which overload created it.</summary>
+public sealed record ScenarioLocator(string Source);
 
 /// <summary>
 /// A WPF application with the default <see cref="ShutdownMode.OnLastWindowClose"/> that shows a window on startup,
@@ -29,7 +29,7 @@ public sealed class ScenarioApplication : Application, IApplicationInitializeCom
 
     public void Initialize() => _log.Event("Initialize");
 
-    public void InitializeLocator(ScenarioLocator viewModelLocator) => _log.Event("InitializeLocator");
+    public void InitializeLocator(ScenarioLocator viewModelLocator) => _log.Event("InitializeLocator", viewModelLocator?.Source ?? "null");
 
     protected override void OnStartup(StartupEventArgs e)
     {

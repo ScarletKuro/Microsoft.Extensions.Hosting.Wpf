@@ -7,12 +7,13 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <IsPackable>false</IsPackable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Scenarios drive the WPF Dispatcher directly on purpose (VSTHRD analyzers come with the main package dependencies). -->
+    <!-- Scenarios drive the WPF Dispatcher directly on purpose (VSTHRD analyzers come with the Threading package). -->
     <NoWarn>$(NoWarn);VSTHRD001;VSTHRD110</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../src/Microsoft.Extensions.Hosting.Wpf/Microsoft.Extensions.Hosting.Wpf.csproj" />
     <ProjectReference Include="../../src/Microsoft.Extensions.Hosting.Wpf.TrayIcon/Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj" />
+    <ProjectReference Include="../../src/Microsoft.Extensions.Hosting.Wpf.Threading/Microsoft.Extensions.Hosting.Wpf.Threading.csproj" />
   </ItemGroup>
 </Project>

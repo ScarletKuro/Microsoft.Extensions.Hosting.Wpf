@@ -40,7 +40,7 @@ public class ApplicationBuilderTests
     }
 
     [Fact]
-    public void LocatorFactoryIsDeferredAndUsesTheConfiguredContainer()
+    public void LocatorFactoryIsDeferredWithCustomServiceProviderFactory()
     {
         var builder = Host.CreateApplicationBuilder();
         var calls = 0;
@@ -157,6 +157,32 @@ public class ApplicationBuilderTests
 
         Assert.Contains("AddWpf<TestApplication>()", exception.Message);
         Assert.Equal(count, services.Count);
+    }
+
+    [Fact]
+    public void InitializationForAnotherApplicationIsRejectedInEitherOrder()
+    {
+        // AddWpf<A>() then AddWpfInitialization<B>(): previously A started before B's validation failed.
+        var services = new ServiceCollection();
+        services.AddWpf<TestApplication>();
+        var count = services.Count;
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddWpfInitialization<OtherApplication>());
+        Assert.Contains("OtherApplication", exception.Message);
+        Assert.Contains("AddWpf<TestApplication>()", exception.Message);
+        Assert.Equal(count, services.Count);
+
+        // AddWpfInitialization<B>() then AddWpf<A>().
+        services = new ServiceCollection();
+        services.AddWpfInitialization<OtherApplication>();
+        count = services.Count;
+        Assert.Throws<InvalidOperationException>(() => services.AddWpf<TestApplication>());
+        Assert.Equal(count, services.Count);
+
+        // IHostBuilder defers registration to Build(), which then fails before anything can start.
+        var hostBuilder = Host.CreateDefaultBuilder()
+            .ConfigureServices(s => s.AddWpf<TestApplication>())
+            .UseWpfInitialization<OtherApplication>();
+        Assert.Throws<InvalidOperationException>(() => hostBuilder.Build());
     }
 
     [Fact]
@@ -306,6 +332,8 @@ public class ApplicationBuilderTests
         var thread = host.Services.GetRequiredService<IWpfThread<TestApplication>>();
         var context = host.Services.GetRequiredService<IWpfContext<TestApplication>>();
         var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+        // Resolved before the UI thread exists, like a constructor-injected dependency of a hosted service.
+        var joinableTaskFactory = host.Services.GetRequiredService<JoinableTaskFactory>();
         try
         {
             await host.StartAsync().WaitAsync(TimeSpan.FromSeconds(15));
@@ -319,8 +347,7 @@ public class ApplicationBuilderTests
             Assert.Equal(ApartmentState.STA, thread.MainThread.GetApartmentState());
             Assert.True(context.IsRunning);
 
-            // AddThreadSwitching: switching from a thread pool thread lands on the WPF UI thread.
-            var joinableTaskFactory = host.Services.GetRequiredService<JoinableTaskFactory>();
+            // AddThreadSwitching: the factory resolved before StartAsync switches from a thread pool thread onto the WPF UI thread.
             var switchedThreadId = await Task.Run(async () =>
             {
                 await joinableTaskFactory.SwitchToMainThreadAsync();
@@ -347,9 +374,13 @@ public class ApplicationBuilderTests
     public sealed class Locator;
 
     // Never instantiated: WPF allows only one Application per AppDomain.
-    public sealed class OtherApplication : Application, IApplicationInitializeComponent
+    public sealed class OtherApplication : Application, IApplicationInitializeComponent, IApplicationInitialize
     {
         public void InitializeComponent()
+        {
+        }
+
+        public void Initialize()
         {
         }
     }

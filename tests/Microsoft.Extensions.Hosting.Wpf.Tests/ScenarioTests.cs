@@ -42,11 +42,19 @@ public class ScenarioTests
         return data;
     }
 
+    // Every UI lifecycle event the scenario app can log. Selected independently of the expectation, so unexpected,
+    // missing or repeated calls change the sequence and fail the comparison.
+    private static readonly string[] UiLifecycleEvents =
+    {
+        "Constructor", "InitializeComponent", "Initialize", "LocatorFactory", "InitializeLocator", "TrayInitialize",
+        "Startup", "WindowShown", "SwitchedToMainThread", "Exit", "TrayDispose",
+    };
+
     [Theory]
     [MemberData(nameof(AllScenarios))]
     public async Task HostAndWpfStartRunAndStopTogether(BuilderKind builder, LifetimeKind lifetime, InitializationKind initialization, StopKind stop)
     {
-        var result = await RunAsync(new Scenario(builder, lifetime, initialization, stop, FailStartup: false));
+        var result = await RunAsync(new Scenario(builder, lifetime, initialization, stop));
 
         // The process ended by itself: host.Run() returned, the UI thread ended and the host is no longer running WPF.
         result.AssertInfo("Completed", "True");
@@ -57,20 +65,19 @@ public class ScenarioTests
         result.AssertNoInfo("ApplicationMissingAtHostStarted");
         result.AssertInfo("Lifetime", lifetime == LifetimeKind.Wpf ? "WpfLifetime" : "ConsoleLifetime");
 
-        // Everything WPF happens on the UI thread, in this order.
+        // Everything WPF happens on the UI thread, exactly in this order and exactly once.
         var expectedUiEvents = new List<string> { "Constructor", "InitializeComponent" };
-        if (initialization is InitializationKind.Initialization or InitializationKind.InitializationPostBuild)
+        expectedUiEvents.AddRange(initialization switch
         {
-            expectedUiEvents.Add("Initialize");
-        }
-        else if (initialization is InitializationKind.Locator or InitializationKind.LocatorPostBuild)
-        {
-            expectedUiEvents.AddRange(new[] { "Initialize", "LocatorFactory", "InitializeLocator" });
-        }
-
-        expectedUiEvents.AddRange(new[] { "TrayInitialize", "Startup", "WindowShown", "Exit", "TrayDispose" });
+            InitializationKind.None => Array.Empty<string>(),
+            InitializationKind.Initialization or InitializationKind.InitializationPostBuild => new[] { "Initialize" },
+            InitializationKind.Locator or InitializationKind.LocatorPostBuild => new[] { "Initialize", "LocatorFactory", "InitializeLocator" },
+            InitializationKind.LocatorInstance or InitializationKind.LocatorInstancePostBuild => new[] { "Initialize", "InitializeLocator" },
+            _ => throw new ArgumentOutOfRangeException(nameof(initialization)),
+        });
+        expectedUiEvents.AddRange(new[] { "TrayInitialize", "Startup", "WindowShown", "SwitchedToMainThread", "Exit", "TrayDispose" });
         var uiThread = result.Info("UiThread");
-        var uiEvents = result.Events.Where(e => expectedUiEvents.Contains(e.Name)).ToList();
+        var uiEvents = result.Events.Where(e => UiLifecycleEvents.Contains(e.Name)).ToList();
         result.Assert(expectedUiEvents.SequenceEqual(uiEvents.Select(e => e.Name)),
             $"UI events were [{string.Join(", ", uiEvents.Select(e => e.Name))}], expected [{string.Join(", ", expectedUiEvents)}].");
         foreach (var uiEvent in uiEvents)
@@ -78,10 +85,19 @@ public class ScenarioTests
             result.Assert(uiEvent.Thread == uiThread, $"{uiEvent.Name} ran on thread {uiEvent.Thread}, not on the UI thread {uiThread}.");
         }
 
+        // The locator passed to InitializeLocator is the one the overload provides, and the factory gets the host's provider.
         if (initialization is InitializationKind.Locator or InitializationKind.LocatorPostBuild)
         {
             result.Assert(result.Event("LocatorFactory").Value == "True", "The locator factory did not receive the host's service provider.");
+            result.Assert(result.Event("InitializeLocator").Value == ScenarioApp.Program.LocatorFactorySource, $"InitializeLocator received '{result.Event("InitializeLocator").Value}', not the factory's locator.");
         }
+        else if (initialization is InitializationKind.LocatorInstance or InitializationKind.LocatorInstancePostBuild)
+        {
+            result.Assert(result.Event("InitializeLocator").Value == ScenarioApp.Program.LocatorInstanceSource, $"InitializeLocator received '{result.Event("InitializeLocator").Value}', not the configured instance.");
+        }
+
+        // AddThreadSwitching: the JoinableTaskFactory injected before the UI thread existed switched onto it (checked above).
+        result.AssertInfo("JoinableTaskFactoryResolvedBeforeUiThread", "True");
 
         // The host started only once the application was initialized, and stopped.
         result.Assert(result.IndexOf("HostStarted") > result.IndexOf("TrayInitialize"), "ApplicationStarted was raised before the application was initialized.");
@@ -95,17 +111,44 @@ public class ScenarioTests
         result.Assert(result.ExitCode == expectedExitCode, $"Process exit code was {result.ExitCode}, expected {expectedExitCode}.");
     }
 
-    [Theory]
-    [MemberData(nameof(AllHosts))]
-    public async Task ApplicationStartupFailureFailsHostRunWithoutCrashing(BuilderKind builder, LifetimeKind lifetime)
+    public static TheoryData<BuilderKind, LifetimeKind, FailureKind> AllStartupFailures()
     {
-        var result = await RunAsync(new Scenario(builder, lifetime, InitializationKind.None, StopKind.HostStop, FailStartup: true));
+        var data = new TheoryData<BuilderKind, LifetimeKind, FailureKind>();
+        foreach (var builder in Enum.GetValues<BuilderKind>())
+        foreach (var lifetime in Enum.GetValues<LifetimeKind>())
+        foreach (var failure in new[] { FailureKind.ApplicationFactory, FailureKind.LaterHostedService })
+        {
+            data.Add(builder, lifetime, failure);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(AllStartupFailures))]
+    public async Task StartupFailureFailsHostRunAndLeavesNoUiThread(BuilderKind builder, LifetimeKind lifetime, FailureKind failure)
+    {
+        var result = await RunAsync(new Scenario(builder, lifetime, InitializationKind.None, StopKind.HostStop, failure));
 
         // host.Run() threw the original exception on the main thread; the process did not crash from the UI thread.
         result.Assert(result.ExitCode == Scenario.HostFailedExitCode, $"Process exit code was {result.ExitCode}, expected {Scenario.HostFailedExitCode}.");
         result.Assert(result.Info("RunFailed").Contains(Scenario.StartupFailureMessage, StringComparison.Ordinal), "host.Run() did not fail with the startup exception.");
         result.AssertNoInfo("Completed");
-        result.Assert(result.Events.All(e => e.Name != "HostStarted"), "The host reported it started although the application failed to start.");
+        result.Assert(result.Events.All(e => e.Name != "HostStarted"), "The host reported it started although startup failed.");
+
+        // No UI thread outlives the host, even when WPF was already running when a later hosted service failed.
+        result.AssertInfo("UiThreadEnded", "True");
+        result.AssertInfo("IsRunning", "False");
+        if (failure == FailureKind.ApplicationFactory)
+        {
+            result.Assert(result.Events.All(e => e.Name != "Constructor"), "The application was created although its factory failed.");
+        }
+        else
+        {
+            // WPF had started; disposing the host shut it down and disposed the components on the UI thread.
+            result.Event("Exit");
+            result.Assert(result.Event("TrayDispose").Thread == result.Info("UiThread"), "The tray component was not disposed on the UI thread.");
+        }
     }
 
     private static async Task<ScenarioResult> RunAsync(Scenario scenario)

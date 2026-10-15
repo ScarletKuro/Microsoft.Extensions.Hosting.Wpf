@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.VisualStudio.Threading;
 
 namespace Microsoft.Extensions.Hosting.Wpf.ScenarioApp;
 
@@ -10,14 +11,18 @@ public sealed class ScenarioDriver : IHostedService
     private readonly IWpfThread<ScenarioApplication> _thread;
     private readonly Scenario _scenario;
     private readonly ScenarioLog _log;
+    private readonly JoinableTaskFactory _joinableTaskFactory;
 
-    public ScenarioDriver(IHostApplicationLifetime lifetime, IWpfContext<ScenarioApplication> context, IWpfThread<ScenarioApplication> thread, Scenario scenario, ScenarioLog log)
+    public ScenarioDriver(IHostApplicationLifetime lifetime, IWpfContext<ScenarioApplication> context, IWpfThread<ScenarioApplication> thread, Scenario scenario, ScenarioLog log, JoinableTaskFactory joinableTaskFactory)
     {
         _lifetime = lifetime;
         _context = context;
         _thread = thread;
         _scenario = scenario;
         _log = log;
+        _joinableTaskFactory = joinableTaskFactory;
+        // The host creates hosted services before starting any of them, so this factory is obtained before the UI thread exists.
+        _log.Info("JoinableTaskFactoryResolvedBeforeUiThread", (thread.MainThread.ThreadState & ThreadState.Unstarted) != 0);
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -48,6 +53,12 @@ public sealed class ScenarioDriver : IHostedService
             }
 
             var window = await application.Started.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+            // The factory obtained before the UI thread existed must now switch to it (we are on a thread pool thread).
+            await _joinableTaskFactory.SwitchToMainThreadAsync();
+            _log.Event("SwitchedToMainThread");
+            await TaskScheduler.Default;
+
             _log.Event("Stopping", _scenario.Stop);
             switch (_scenario.Stop)
             {
