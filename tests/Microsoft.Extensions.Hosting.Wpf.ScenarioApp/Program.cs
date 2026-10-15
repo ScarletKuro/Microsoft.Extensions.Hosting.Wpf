@@ -112,6 +112,8 @@ public static class Program
     {
         services.AddSingleton(log);
         services.AddSingleton(scenario);
+        services.AddSingleton<ScenarioResource>();
+        services.AddSingleton<LateScenarioResource>();
         if (scenario.Failure == FailureKind.ApplicationFactory)
         {
             services.AddWpf<ScenarioApplication>(_ => throw new InvalidOperationException(Scenario.StartupFailureMessage));
@@ -123,6 +125,7 @@ public static class Program
 
         services.AddWpfTrayIcon<ScenarioTrayIcon>();
         services.AddSingleton<StartupCancellation>();
+        services.AddSingleton<HostDisposalSignal>();
         if (scenario.Failure == FailureKind.CanceledDuringInitialization)
         {
             // Blocks UI initialization, cancels startup meanwhile, and finishes only after the host has been disposed.
@@ -210,26 +213,52 @@ public sealed class StartupCancellation
 }
 
 /// <summary>
-/// An <see cref="Microsoft.Extensions.Hosting.Wpf.Core.IWpfComponent"/> whose initialization cancels host startup and then keeps
-/// the UI thread busy until the host has been disposed. Afterwards the UI thread must not start the application.
+/// Disposed by the host when it disposes its services: created after the WPF thread, so (reverse creation order) before it.
+/// Signals that host disposal has begun.
+/// </summary>
+public sealed class HostDisposalSignal : IDisposable
+{
+    private readonly ScenarioLog _log;
+    private readonly ManualResetEventSlim _disposed = new();
+
+    public HostDisposalSignal(ScenarioLog log)
+    {
+        _log = log;
+    }
+
+    public bool WaitForHostDisposal(TimeSpan timeout) => _disposed.Wait(timeout);
+
+    public void Dispose()
+    {
+        _log.Event("HostDisposalStarted");
+        _disposed.Set();
+    }
+}
+
+/// <summary>
+/// An <see cref="Microsoft.Extensions.Hosting.Wpf.Core.IWpfComponent"/> whose initialization cancels host startup and then
+/// keeps the UI thread busy until the host has begun disposing its services. This establishes the interleaving explicitly:
+/// startup is cancelled and abandoned while the UI thread still initializes. Afterwards it must not start the application.
 /// </summary>
 public sealed class BlockingInitializationComponent : ITrayIcon
 {
     private readonly ScenarioLog _log;
     private readonly StartupCancellation _cancellation;
+    private readonly HostDisposalSignal _hostDisposal;
 
-    public BlockingInitializationComponent(ScenarioLog log, StartupCancellation cancellation)
+    public BlockingInitializationComponent(ScenarioLog log, StartupCancellation cancellation, HostDisposalSignal hostDisposal)
     {
         _log = log;
         _cancellation = cancellation;
+        _hostDisposal = hostDisposal;
     }
 
     public void InitializeComponent()
     {
         _log.Event("BlockingInitializeStarted");
         _cancellation.Source.Cancel();
-        // Host.StartAsync observes the cancellation and the host is disposed while this initialization still runs.
-        Thread.Sleep(TimeSpan.FromSeconds(1));
+        // The library gives up waiting for this initialization (bounded), the host fails and begins disposing; only then continue.
+        _log.Info("HostDisposalObserved", _hostDisposal.WaitForHostDisposal(TimeSpan.FromSeconds(60)));
         _log.Event("BlockingInitializeFinished");
     }
 

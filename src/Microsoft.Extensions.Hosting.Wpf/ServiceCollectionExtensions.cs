@@ -237,6 +237,7 @@ public static class ServiceCollectionExtensions
         });
         services.TryAddSingleton<IWpfThread<TApplication>>(s => s.GetRequiredService<WpfThread<TApplication>>());
         services.TryAddSingleton<IWpfThread>(s => s.GetRequiredService<WpfThread<TApplication>>());
+        services.TryAddSingleton<WpfStartupGuard<TApplication>>(); //for internal usage only, see WpfStartupGuard
 
         //Register Wpf IHostedService
         services.AddHostedService<WpfHostedService<TApplication>>();

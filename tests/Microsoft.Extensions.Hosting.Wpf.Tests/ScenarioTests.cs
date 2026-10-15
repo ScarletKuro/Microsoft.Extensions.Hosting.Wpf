@@ -109,6 +109,23 @@ public class ScenarioTests
         result.Assert(result.Event("Exit").Value == expectedExitCode.ToString(System.Globalization.CultureInfo.InvariantCulture),
             $"WPF exited with {result.Event("Exit").Value}, expected {expectedExitCode}.");
         result.Assert(result.ExitCode == expectedExitCode, $"Process exit code was {result.ExitCode}, expected {expectedExitCode}.");
+
+        // However the application stops, its cleanup runs before the host disposes the services it uses.
+        AssertCleanupBeforeServicesDisposed(result);
+
+        // Services resolved after startup (created after everything else) are disposed first: StopAsync must have waited
+        // for WPF to exit completely before the host started disposing.
+        result.AssertNoInfo("LateResourceUsedAfterDispose");
+        result.Assert(result.IndexOf("Exit") < result.IndexOf("LateResourceDisposed"), "OnExit ran after the host disposed a service resolved after startup.");
+    }
+
+    // OnExit and component disposal use ScenarioResource, an application-owned disposable singleton.
+    private static void AssertCleanupBeforeServicesDisposed(ScenarioResult result)
+    {
+        result.AssertNoInfo("ResourceUsedAfterDispose");
+        var resourceDisposed = result.IndexOf("ResourceDisposed");
+        result.Assert(result.IndexOf("Exit") < resourceDisposed, "OnExit ran after the host disposed the application's services.");
+        result.Assert(result.IndexOf("TrayDispose") < resourceDisposed, "Components were disposed after the host disposed the application's services.");
     }
 
     public static TheoryData<BuilderKind, LifetimeKind, FailureKind> AllStartupFailures()
@@ -116,7 +133,7 @@ public class ScenarioTests
         var data = new TheoryData<BuilderKind, LifetimeKind, FailureKind>();
         foreach (var builder in Enum.GetValues<BuilderKind>())
         foreach (var lifetime in Enum.GetValues<LifetimeKind>())
-        foreach (var failure in new[] { FailureKind.ApplicationFactory, FailureKind.LaterHostedService, FailureKind.LaterHostedServiceStarted, FailureKind.CanceledDuringInitialization })
+        foreach (var failure in new[] { FailureKind.ApplicationFactory, FailureKind.ApplicationStartup, FailureKind.LaterHostedService, FailureKind.LaterHostedServiceStarted, FailureKind.CanceledDuringInitialization })
         {
             data.Add(builder, lifetime, failure);
         }
@@ -147,6 +164,12 @@ public class ScenarioTests
             case FailureKind.ApplicationFactory:
                 result.Assert(result.Events.All(e => e.Name != "Constructor"), "The application was created although its factory failed.");
                 break;
+            case FailureKind.ApplicationStartup:
+                // OnStartup threw inside Application.Run(): host startup fails with that exception (checked above) instead of
+                // the process crashing from the UI thread, and the components are disposed on the UI thread.
+                result.Event("Startup");
+                result.Assert(result.Event("TrayDispose").Thread == uiThread, "The tray component was not disposed on the UI thread.");
+                break;
             case FailureKind.LaterHostedService:
                 // WPF starts only after every hosted service has started, so a failing StartAsync means WPF is never created
                 // and no application code can run while the host is disposed.
@@ -154,16 +177,19 @@ public class ScenarioTests
                 result.Assert(result.Events.All(e => e.Name != "Constructor"), "The application was created although a hosted service failed to start.");
                 break;
             case FailureKind.LaterHostedServiceStarted:
-                // A hosted service failed in StartedAsync after WPF had started: disposing the host shut WPF down and disposed
-                // the components on the UI thread.
+                // A hosted service failed in StartedAsync after WPF had started, so StopAsync is never called. WPF is still shut
+                // down (Exit handlers, component disposal on the UI thread) before the host disposes the application's services.
                 result.Event("FailingHostedServiceStarted");
                 result.Event("Exit");
                 result.Assert(result.Event("TrayDispose").Thread == uiThread, "The tray component was not disposed on the UI thread.");
+                AssertCleanupBeforeServicesDisposed(result);
                 break;
             case FailureKind.CanceledDuringInitialization:
-                // The host was disposed while the UI thread was still initializing: the application must never start,
-                // and the components created so far are disposed on the UI thread.
-                result.Event("BlockingInitializeFinished");
+                // The initialization deliberately outlives startup: it only continues once the host has begun disposing.
+                // The application must never start, and the components created so far are disposed on the UI thread.
+                // (Services used by that late cleanup may already be disposed: the initialization outran the stop timeout.)
+                result.AssertInfo("HostDisposalObserved", "True");
+                result.Assert(result.IndexOf("HostDisposalStarted") < result.IndexOf("BlockingInitializeFinished"), "Initialization finished before host disposal began; the intended interleaving was not established.");
                 result.Assert(result.Events.All(e => e.Name is not ("Startup" or "WindowShown")), "The application started after the host was disposed.");
                 result.Assert(result.Event("BlockingComponentDispose").Thread == uiThread, "The initialized components were not disposed on the UI thread.");
                 break;

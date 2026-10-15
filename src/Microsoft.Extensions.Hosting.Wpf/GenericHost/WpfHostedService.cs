@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,12 +10,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
-[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by dependency injection (AddHostedService).")]
 /// <summary>
-/// Starts the WPF UI thread in <see cref="StartedAsync"/>, i.e. only after every hosted service has started successfully
-/// (like ASP.NET Core starts serving requests). If any hosted service fails to start, WPF is never created, so no application
-/// code can run against a host that is being disposed. Stops WPF in <see cref="StopAsync"/>.
+/// Starts WPF in <see cref="StartedAsync"/>, i.e. only after every hosted service has started successfully (like ASP.NET Core
+/// starts serving requests): if any hosted service fails to start, WPF is never created. Stops WPF in <see cref="StopAsync"/>
+/// and waits for the UI thread to end, so application cleanup runs before the host disposes its services.
 /// </summary>
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by dependency injection (AddHostedService).")]
 internal sealed class WpfHostedService<TApplication>
     : IHostedLifecycleService where TApplication : Application, IApplicationInitializeComponent
 {
@@ -42,11 +43,11 @@ internal sealed class WpfHostedService<TApplication>
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc />
-    public Task StartedAsync(CancellationToken cancellationToken)
+    public async Task StartedAsync(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         _logger.WpfStarting();
@@ -54,9 +55,19 @@ internal sealed class WpfHostedService<TApplication>
         _wpfThread.Start();
         _logger.WpfThreadStarted();
 
-        // Wait until the application is created and initialized on the UI thread. This makes startup failures fail the host
-        // instead of crashing the process, and guarantees the application exists before ApplicationStarted is raised.
-        return WaitAsync(_wpfThread.Initialized, cancellationToken);
+        try
+        {
+            // Wait until the application is initialized and its Startup has completed, so failures until then fail host
+            // startup instead of crashing the process.
+            await WaitAsync(_wpfThread.Started, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Startup failed or was cancelled: the host will be disposed without calling StopAsync. End the UI thread now,
+            // while the host's services still work.
+            _wpfThread.StopAndWait();
+            throw;
+        }
     }
 
     private static async Task WaitAsync(Task task, CancellationToken cancellationToken)
@@ -97,6 +108,17 @@ internal sealed class WpfHostedService<TApplication>
                     //shut down before running our callback. The application is stopped, so there is nothing left to do.
                 }
             }
+        }
+
+        // Shutdown() only queues the shutdown. Wait until the UI thread has ended, i.e. Exit handlers ran and the components were
+        // disposed, so they can still use their dependencies: the host disposes services right after StopAsync.
+        try
+        {
+            await WaitAsync(_wpfThread.Completed, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The host's shutdown timeout elapsed; disposing the host still waits for the UI thread (WpfThread.Dispose).
         }
     }
 
