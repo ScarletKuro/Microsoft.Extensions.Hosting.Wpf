@@ -48,6 +48,8 @@ public enum FailureKind
     ApplicationFactory,
     /// <summary>A hosted service registered after <c>AddWpf</c> throws in <c>StartAsync</c>, after WPF has started.</summary>
     LaterHostedService,
+    /// <summary>Startup is cancelled while the UI thread is still initializing; the host is disposed before initialization ends.</summary>
+    CanceledDuringInitialization,
 }
 
 /// <summary>What ends the application once it runs.</summary>

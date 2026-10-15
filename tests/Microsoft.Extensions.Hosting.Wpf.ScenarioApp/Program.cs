@@ -28,7 +28,14 @@ public static class Program
         try
         {
             // Blocks until the host stops, then disposes it.
-            host.Run();
+            if (scenario.Failure == FailureKind.CanceledDuringInitialization)
+            {
+                host.RunAsync(host.Services.GetRequiredService<StartupCancellation>().Source.Token).GetAwaiter().GetResult();
+            }
+            else
+            {
+                host.Run();
+            }
         }
         catch (Exception exception)
         {
@@ -36,16 +43,17 @@ public static class Program
             Environment.ExitCode = Scenario.HostFailedExitCode;
         }
 
-        // Unstarted (startup failed before the UI thread started) or ended: no UI thread may outlive the host.
-        log.Info("UiThreadEnded", (thread.MainThread.ThreadState & ThreadState.Unstarted) != 0 || thread.MainThread.Join(TimeSpan.FromSeconds(10)));
+        // Recorded immediately: disposing the host must already have waited for the UI thread. No UI thread may outlive the host.
+        log.Info("UiThreadAliveAfterRun", thread.MainThread.IsAlive);
         log.Info("IsRunning", context.IsRunning);
-        if (Environment.ExitCode == Scenario.HostFailedExitCode)
-        {
-            return;
-        }
 
-        log.Info("IsRunning", context.IsRunning);
-        log.Info("Completed", true);
+        // Cleanup only (not reported): give a misbehaving UI thread the chance to show what it does after the host is gone.
+        thread.MainThread.Join(TimeSpan.FromSeconds(5));
+        log.Info("IsRunningAfterCleanup", context.IsRunning);
+        if (Environment.ExitCode != Scenario.HostFailedExitCode)
+        {
+            log.Info("Completed", true);
+        }
     }
 
     private static IHost BuildHost(Scenario scenario, ScenarioLog log)
@@ -111,6 +119,13 @@ public static class Program
         }
 
         services.AddWpfTrayIcon<ScenarioTrayIcon>();
+        services.AddSingleton<StartupCancellation>();
+        if (scenario.Failure == FailureKind.CanceledDuringInitialization)
+        {
+            // Blocks UI initialization, cancels startup meanwhile, and finishes only after the host has been disposed.
+            services.AddWpfTrayIcon<BlockingInitializationComponent>();
+        }
+
         // Both overloads; JoinableTaskFactory is constructor-injected into ScenarioDriver before the UI thread starts.
         if (scenario.Lifetime == LifetimeKind.Wpf)
         {
@@ -182,6 +197,39 @@ public static class Program
         log.Event("LocatorFactory", provider.GetRequiredService<ScenarioLog>() == log);
         return new ScenarioLocator(LocatorFactorySource);
     }
+}
+
+/// <summary>Token passed to <c>host.RunAsync</c> in <see cref="FailureKind.CanceledDuringInitialization"/>.</summary>
+public sealed class StartupCancellation
+{
+    public CancellationTokenSource Source { get; } = new();
+}
+
+/// <summary>
+/// An <see cref="Microsoft.Extensions.Hosting.Wpf.Core.IWpfComponent"/> whose initialization cancels host startup and then keeps
+/// the UI thread busy until the host has been disposed. Afterwards the UI thread must not start the application.
+/// </summary>
+public sealed class BlockingInitializationComponent : ITrayIcon
+{
+    private readonly ScenarioLog _log;
+    private readonly StartupCancellation _cancellation;
+
+    public BlockingInitializationComponent(ScenarioLog log, StartupCancellation cancellation)
+    {
+        _log = log;
+        _cancellation = cancellation;
+    }
+
+    public void InitializeComponent()
+    {
+        _log.Event("BlockingInitializeStarted");
+        _cancellation.Source.Cancel();
+        // Host.StartAsync observes the cancellation and the host is disposed while this initialization still runs.
+        Thread.Sleep(TimeSpan.FromSeconds(1));
+        _log.Event("BlockingInitializeFinished");
+    }
+
+    public void Dispose() => _log.Event("BlockingComponentDispose");
 }
 
 /// <summary>A hosted service registered after AddWpf whose start fails while WPF is already running.</summary>

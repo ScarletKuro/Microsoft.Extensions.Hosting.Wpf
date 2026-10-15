@@ -8,8 +8,8 @@
     <IsPackable>false</IsPackable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <!-- Scenarios drive the WPF Dispatcher directly on purpose (VSTHRD analyzers come with the Threading package). -->
-    <NoWarn>$(NoWarn);VSTHRD001;VSTHRD110</NoWarn>
+    <!-- Scenarios drive the WPF Dispatcher directly and block in Main like host.Run() does, on purpose (VSTHRD analyzers come with the Threading package). -->
+    <NoWarn>$(NoWarn);VSTHRD001;VSTHRD002;VSTHRD110</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

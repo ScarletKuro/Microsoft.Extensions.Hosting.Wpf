@@ -20,6 +20,8 @@ internal sealed class WpfThread<TApplication>
     private const int DisposeShutdownTimeoutMilliseconds = 10_000;
 
     private readonly IServiceProvider _serviceProvider;
+    // Guards _disposed together with IsRunning, so a disposed thread can never start Application.Run().
+    private readonly object _stateLock = new();
     private volatile bool _disposed;
     private readonly WpfContext<TApplication> _wpfContext;
     private Action<WpfContext<TApplication>>? _preContextInitialization;
@@ -92,28 +94,39 @@ internal sealed class WpfThread<TApplication>
     /// </summary>
     void IDisposable.Dispose()
     {
-        if (_disposed)
+        bool running;
+        lock (_stateLock)
         {
-            return;
+            if (_disposed)
+            {
+                return;
+            }
+
+            // From here on, a UI thread that is still initializing ends without running the application (see UiThreadStart).
+            _disposed = true;
+            running = _wpfContext.IsRunning;
         }
 
-        _disposed = true;
-        if (!_wpfContext.IsRunning || _wpfContext.WpfApplication is not { } application)
+        if (running && _wpfContext.WpfApplication is { } application)
         {
-            return;
+            var dispatcher = application.Dispatcher;
+            if (dispatcher.CheckAccess())
+            {
+                // Disposed from the UI thread itself: it cannot wait for its own end.
+                application.Shutdown();
+                return;
+            }
+
+            // Ignored if WPF is already shutting down; the dispatcher then aborts the operation.
+            _ = dispatcher.InvokeAsync(() => application.Shutdown());
         }
 
-        var dispatcher = application.Dispatcher;
-        if (dispatcher.CheckAccess())
+        // Wait for the UI thread to end, whether it was running, still initializing, or disposing its components,
+        // so no UI thread outlives the host.
+        if (MainThread.IsAlive && Thread.CurrentThread != MainThread)
         {
-            // Disposed from the UI thread itself: it cannot wait for its own end.
-            application.Shutdown();
-            return;
+            MainThread.Join(DisposeShutdownTimeoutMilliseconds);
         }
-
-        // Ignored if WPF is already shutting down; the dispatcher then aborts the operation.
-        _ = dispatcher.InvokeAsync(() => application.Shutdown());
-        MainThread.Join(DisposeShutdownTimeoutMilliseconds);
     }
 
     /// <summary>
@@ -174,8 +187,20 @@ internal sealed class WpfThread<TApplication>
     /// </summary>
     private void UiThreadStart()
     {
-        // Mark the application as running
-        _wpfContext.IsRunning = true;
+        lock (_stateLock)
+        {
+            // The host was disposed while the application was initializing (e.g. startup was cancelled):
+            // never run the application without a host.
+            if (_disposed)
+            {
+                _initialized.TrySetCanceled();
+                return;
+            }
+
+            // Mark the application as running
+            _wpfContext.IsRunning = true;
+        }
+
         // Let WpfHostedService.StartAsync complete
         _initialized.TrySetResult(true);
 

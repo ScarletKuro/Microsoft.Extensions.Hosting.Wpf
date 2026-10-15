@@ -58,7 +58,7 @@ public class ScenarioTests
 
         // The process ended by itself: host.Run() returned, the UI thread ended and the host is no longer running WPF.
         result.AssertInfo("Completed", "True");
-        result.AssertInfo("UiThreadEnded", "True");
+        result.AssertInfo("UiThreadAliveAfterRun", "False");
         result.AssertInfo("IsRunning", "False");
         result.AssertNoInfo("RunFailed");
         result.AssertNoInfo("DriverFailed");
@@ -116,7 +116,7 @@ public class ScenarioTests
         var data = new TheoryData<BuilderKind, LifetimeKind, FailureKind>();
         foreach (var builder in Enum.GetValues<BuilderKind>())
         foreach (var lifetime in Enum.GetValues<LifetimeKind>())
-        foreach (var failure in new[] { FailureKind.ApplicationFactory, FailureKind.LaterHostedService })
+        foreach (var failure in new[] { FailureKind.ApplicationFactory, FailureKind.LaterHostedService, FailureKind.CanceledDuringInitialization })
         {
             data.Add(builder, lifetime, failure);
         }
@@ -132,22 +132,33 @@ public class ScenarioTests
 
         // host.Run() threw the original exception on the main thread; the process did not crash from the UI thread.
         result.Assert(result.ExitCode == Scenario.HostFailedExitCode, $"Process exit code was {result.ExitCode}, expected {Scenario.HostFailedExitCode}.");
-        result.Assert(result.Info("RunFailed").Contains(Scenario.StartupFailureMessage, StringComparison.Ordinal), "host.Run() did not fail with the startup exception.");
+        var expectedFailure = failure == FailureKind.CanceledDuringInitialization ? "canceled" : Scenario.StartupFailureMessage;
+        result.Assert(result.Info("RunFailed").Contains(expectedFailure, StringComparison.Ordinal), $"host.Run() did not fail with '{expectedFailure}'.");
         result.AssertNoInfo("Completed");
         result.Assert(result.Events.All(e => e.Name != "HostStarted"), "The host reported it started although startup failed.");
 
-        // No UI thread outlives the host, even when WPF was already running when a later hosted service failed.
-        result.AssertInfo("UiThreadEnded", "True");
+        // No UI thread outlives the host: checked right after host.Run() returned, so disposing the host must have waited.
+        result.AssertInfo("UiThreadAliveAfterRun", "False");
         result.AssertInfo("IsRunning", "False");
-        if (failure == FailureKind.ApplicationFactory)
+        result.AssertInfo("IsRunningAfterCleanup", "False");
+        var uiThread = result.Info("UiThread");
+        switch (failure)
         {
-            result.Assert(result.Events.All(e => e.Name != "Constructor"), "The application was created although its factory failed.");
-        }
-        else
-        {
-            // WPF had started; disposing the host shut it down and disposed the components on the UI thread.
-            result.Event("Exit");
-            result.Assert(result.Event("TrayDispose").Thread == result.Info("UiThread"), "The tray component was not disposed on the UI thread.");
+            case FailureKind.ApplicationFactory:
+                result.Assert(result.Events.All(e => e.Name != "Constructor"), "The application was created although its factory failed.");
+                break;
+            case FailureKind.LaterHostedService:
+                // WPF had started; disposing the host shut it down and disposed the components on the UI thread.
+                result.Event("Exit");
+                result.Assert(result.Event("TrayDispose").Thread == uiThread, "The tray component was not disposed on the UI thread.");
+                break;
+            case FailureKind.CanceledDuringInitialization:
+                // The host was disposed while the UI thread was still initializing: the application must never start,
+                // and the components created so far are disposed on the UI thread.
+                result.Event("BlockingInitializeFinished");
+                result.Assert(result.Events.All(e => e.Name is not ("Startup" or "WindowShown")), "The application started after the host was disposed.");
+                result.Assert(result.Event("BlockingComponentDispose").Thread == uiThread, "The initialized components were not disposed on the UI thread.");
+                break;
         }
     }
 
