@@ -21,6 +21,7 @@ Most applications only need the first two steps. Every other break has a one-lin
 | construct `WpfLifetime` yourself | Drop the `IWpfContext` argument | It was unused |
 | call `Extensions.Hosting.Wpf.Bootstrap.WpfHostingExtensions` statically | Use `WpfBootstrapHostingExtensions` (extension-method calls are unaffected) | Clashed with the main package's `WpfHostingExtensions` |
 | use the UI from a hosted service's `StartAsync` | Do it from `IHostApplicationLifetime.ApplicationStarted` | WPF now starts after every hosted service has started, so a failing hosted service never leaves WPF running against a disposed host |
+| call `IWpfThread.Start()` | Remove the call; the library starts the WPF thread itself | Starting it outside the host lifecycle bypassed startup ordering and failure handling |
 | call `AddWpf` for two different application types | Register one application | WPF allows only one `Application` per process; this always failed at runtime |
 
 ### Added
@@ -41,6 +42,7 @@ Most applications only need the first two steps. Every other break has a one-lin
 - **Breaking:** Renamed `WpfLifeTimeOptions` to `WpfLifetimeOptions`.
 - **Breaking:** `AbstractViewModelLocatorHost<TViewModelLocator>` is now `abstract`; derive your locator host from it.
 - **Breaking:** `WpfHostedService<TApplication>` is now internal. It is registered by `AddWpf<TApplication>()`.
+- **Breaking:** Removed `IWpfThread.Start()` from the public interface. The library starts the WPF thread at the right point of the host lifecycle; starting it elsewhere bypassed startup ordering and failure handling.
 - **Breaking:** `IWpfContext.IsRunning` is now get-only (it previously had an `internal` setter).
 - **Breaking:** Removed `IWpfContext.IsLifetimeLinked`. Since 4.1.1 the host is stopped when WPF exits regardless of the `IHostLifetime`, so the flag no longer affected anything. To check whether `WpfLifetime` is used, test `services.GetService<IHostLifetime>() is WpfLifetime`.
 - **Breaking:** `WpfLifetime` constructors no longer take an `IWpfContext` parameter; `WpfLifetime` no longer depends on `AddWpf<TApplication>()`.

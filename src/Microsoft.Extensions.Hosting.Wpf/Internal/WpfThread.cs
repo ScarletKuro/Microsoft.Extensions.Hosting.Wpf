@@ -77,8 +77,10 @@ internal sealed class WpfThread<TApplication>
         MainThread.SetApartmentState(ApartmentState.STA);
     }
 
-    /// <inheritdoc />
-    public void Start()
+    /// <summary>
+    /// Starts the UI thread. Called by WpfHostedService.StartedAsync at the right point of the host lifecycle; not public API.
+    /// </summary>
+    internal void Start()
     {
         MainThread.Start();
     }
