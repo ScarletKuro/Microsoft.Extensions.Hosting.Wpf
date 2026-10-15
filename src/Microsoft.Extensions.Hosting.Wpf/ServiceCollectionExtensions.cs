@@ -161,7 +161,9 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton(new WpfInitialization<TApplication>(initialize)); //for internal usage only
-        services.AddHostedService<WpfInitializationValidator<TApplication>>();
+        // First hosted service, so a missing AddWpf<TApplication>() fails startup before any other hosted service starts
+        // (hosted services start in registration order unless HostOptions.ServicesStartConcurrently is enabled).
+        services.Insert(0, ServiceDescriptor.Singleton<IHostedService, WpfInitializationValidator<TApplication>>());
 
         return services;
     }

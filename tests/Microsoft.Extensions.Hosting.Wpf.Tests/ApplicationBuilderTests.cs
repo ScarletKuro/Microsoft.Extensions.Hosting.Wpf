@@ -264,14 +264,35 @@ public class ApplicationBuilderTests
     }
 
     [Fact]
-    public async Task InitializationWithoutAddWpfFailsOnStart()
+    public async Task InitializationWithoutAddWpfFailsOnStartBeforeAnyHostedServiceStarts()
     {
         var builder = Host.CreateApplicationBuilder();
+        var started = new StartRecorder();
+        builder.Services.AddSingleton(started);
+        // Registered before the invalid initialization: validation must still fail first.
+        builder.Services.AddHostedService<RecordingHostedService>();
         builder.Services.AddWpfInitialization<TestApplication>();
         using var host = builder.Build();
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
         Assert.Contains("AddWpf<TestApplication>()", exception.Message);
+        Assert.False(started.Started);
+    }
+
+    public sealed class StartRecorder
+    {
+        public bool Started { get; set; }
+    }
+
+    private sealed class RecordingHostedService(StartRecorder recorder) : IHostedService
+    {
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            recorder.Started = true;
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     [Fact]

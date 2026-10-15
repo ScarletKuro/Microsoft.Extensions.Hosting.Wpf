@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `AddWpfInitialization<TApplication>()`
   - `AddWpfViewModelLocator<TApplication, TViewModelLocator>(viewModelLocator | viewModelLocatorFunc)`
 - `IHostBuilder` overloads of `UseWpfInitialization` and `UseWpfViewModelLocator` that configure initialization before `Build()`.
-- Host startup fails with a clear message when initialization is configured but `AddWpf<TApplication>()` was not called.
+- Host startup fails with a clear message, before any hosted service starts, when initialization is configured but `AddWpf<TApplication>()` was not called.
 - Minimal hosting and explicit `Main` samples using `Host.CreateApplicationBuilder`.
 
 ### Changed
