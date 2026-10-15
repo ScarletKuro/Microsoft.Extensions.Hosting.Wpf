@@ -1,20 +1,14 @@
 ﻿using System.Windows;
 using System.Windows.Threading;
-using Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Core;
 
 public interface IWpfContext
 {
     /// <summary>
-    /// Shows if <see cref="WpfLifetime"/> is used.
-    /// </summary>
-    bool IsLifetimeLinked { get; internal set; }
-
-    /// <summary>
     /// Shows if WPF is running inside <see cref="Microsoft.Extensions.Hosting"/>
     /// </summary>
-    bool IsRunning { get; internal set; }
+    bool IsRunning { get; }
 
     /// <summary>
     /// Instance of WPF <see cref="Application"/>.

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A real WPF host started in its own process by ScenarioTests: WPF allows only one Application per process. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net6.0-windows;net7.0-windows;net8.0-windows;net9.0-windows;net10.0-windows</TargetFrameworks>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <IsPackable>false</IsPackable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- Scenarios drive the WPF Dispatcher directly and block in Main like host.Run() does, on purpose (VSTHRD analyzers come with the Threading package). -->
+    <NoWarn>$(NoWarn);VSTHRD001;VSTHRD002;VSTHRD110</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../src/Microsoft.Extensions.Hosting.Wpf/Microsoft.Extensions.Hosting.Wpf.csproj" />
+    <ProjectReference Include="../../src/Microsoft.Extensions.Hosting.Wpf.TrayIcon/Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj" />
+    <ProjectReference Include="../../src/Microsoft.Extensions.Hosting.Wpf.Threading/Microsoft.Extensions.Hosting.Wpf.Threading.csproj" />
+  </ItemGroup>
+</Project>

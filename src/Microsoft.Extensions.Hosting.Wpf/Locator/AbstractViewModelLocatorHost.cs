@@ -4,7 +4,7 @@ using System.Windows;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Locator;
 
-public class AbstractViewModelLocatorHost<TViewModelLocator>
+public abstract class AbstractViewModelLocatorHost<TViewModelLocator>
     where TViewModelLocator : class
 {
     private const string DefaultLocatorName = "Locator";
@@ -96,9 +96,11 @@ public class AbstractViewModelLocatorHost<TViewModelLocator>
         {
             if (_viewModelLocator is null)
             {
-                throw new InvalidOperationException("Please add IViewModelLocatorInitialization<DIContainer> to your App WPF class. \n" +
-                                                    "Then in Initialize(viewModelLocator) add `var viewModelLocatorHost = ViewModelLocatorHost.GetInstance(this) [ViewModelLocatorHost should implement AbstractViewModelLocatorHost<DIContainer>]`\n" +
-                                                    " and `viewModelLocatorHost.SetViewModelLocator(viewModelLocator);`");
+                var locatorName = typeof(TViewModelLocator).Name;
+                throw new InvalidOperationException($"The view model locator is not set. Implement IViewModelLocatorInitialization<{locatorName}> in your App class " +
+                                                    $"and register it with services.AddWpfViewModelLocator<App, {locatorName}>(...) (or host.UseWpfViewModelLocator).\n" +
+                                                    "Then in InitializeLocator(viewModelLocator) call `ViewModelLocatorHost.GetInstance(this).SetViewModelLocator(viewModelLocator);`, " +
+                                                    $"where ViewModelLocatorHost derives from AbstractViewModelLocatorHost<{locatorName}>.");
             }
 
             return _viewModelLocator;

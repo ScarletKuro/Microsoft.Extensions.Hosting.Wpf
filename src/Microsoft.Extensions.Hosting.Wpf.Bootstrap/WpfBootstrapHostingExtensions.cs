@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Bootstrap;
 
-public static class WpfHostingExtensions
+public static class WpfBootstrapHostingExtensions
 {
     /// <summary>
     /// Bootstraps <see cref="IBootstrap{TContainer}"/> Dependency Injection container that is not Microsoft <see cref="IServiceCollection"/>.
@@ -18,6 +18,11 @@ public static class WpfHostingExtensions
         if (host is null)
         {
             throw new ArgumentNullException(nameof(host));
+        }
+
+        if (container is null)
+        {
+            throw new ArgumentNullException(nameof(container));
         }
 
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();

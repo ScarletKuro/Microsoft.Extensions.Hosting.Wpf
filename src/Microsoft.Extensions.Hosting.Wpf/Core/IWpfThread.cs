@@ -12,11 +12,6 @@ public interface IWpfThread
     SynchronizationContext SynchronizationContext { get; }
 
     /// <summary>
-    /// Start the WPF thread.
-    /// </summary>
-    void Start();
-
-    /// <summary>
     /// Handle the application exit.
     /// </summary>
     void HandleApplicationExit();

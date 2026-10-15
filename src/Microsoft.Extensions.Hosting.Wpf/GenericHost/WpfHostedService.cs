@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -8,12 +10,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
-public class WpfHostedService<TApplication>
-    : IHostedService where TApplication : Application, IApplicationInitializeComponent
+/// <summary>
+/// Starts WPF in <see cref="StartedAsync"/>, i.e. only after every hosted service has started successfully (like ASP.NET Core
+/// starts serving requests): if any hosted service fails to start, WPF is never created. Stops WPF in <see cref="StopAsync"/>
+/// and waits for the UI thread to end, so application cleanup runs before the host disposes its services.
+/// </summary>
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by dependency injection (AddHostedService).")]
+internal sealed class WpfHostedService<TApplication>
+    : IHostedLifecycleService where TApplication : Application, IApplicationInitializeComponent
 {
     private readonly ILogger<WpfHostedService<TApplication>> _logger;
-    private readonly IWpfThread<TApplication> _wpfThread;
-    private readonly IWpfContext<TApplication> _wpfContext;
+    private readonly WpfThread<TApplication> _wpfThread;
+    private readonly WpfContext<TApplication> _wpfContext;
 
     /// <summary>
     /// The constructor which takes all the DI objects
@@ -21,7 +29,7 @@ public class WpfHostedService<TApplication>
     /// <param name="logger">ILogger</param>
     /// <param name="wpfThread">WpfThread</param>
     /// <param name="wpfContext">WpfContext</param>
-    public WpfHostedService(ILogger<WpfHostedService<TApplication>> logger, IWpfThread<TApplication> wpfThread, IWpfContext<TApplication> wpfContext)
+    public WpfHostedService(ILogger<WpfHostedService<TApplication>> logger, WpfThread<TApplication> wpfThread, WpfContext<TApplication> wpfContext)
     {
         _logger = logger;
         _wpfThread = wpfThread;
@@ -29,11 +37,17 @@ public class WpfHostedService<TApplication>
     }
 
     /// <inheritdoc />
-    public Task StartAsync(CancellationToken cancellationToken)
+    public Task StartingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public async Task StartedAsync(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         _logger.WpfStarting();
@@ -41,14 +55,19 @@ public class WpfHostedService<TApplication>
         _wpfThread.Start();
         _logger.WpfThreadStarted();
 
-        // Wait until the application is created and initialized on the UI thread. This makes startup failures fail the host
-        // instead of crashing the process, and guarantees the application exists before ApplicationStarted is raised.
-        if (_wpfThread is WpfThread<TApplication> wpfThread)
+        try
         {
-            return WaitAsync(wpfThread.Initialized, cancellationToken);
+            // Wait until the application is initialized and its Startup has completed, so failures until then fail host
+            // startup instead of crashing the process.
+            await WaitAsync(_wpfThread.Started, cancellationToken).ConfigureAwait(false);
         }
-
-        return Task.CompletedTask;
+        catch
+        {
+            // Startup failed or was cancelled: the host will be disposed without calling StopAsync. End the UI thread now,
+            // while the host's services still work.
+            _wpfThread.StopAndWait();
+            throw;
+        }
     }
 
     private static async Task WaitAsync(Task task, CancellationToken cancellationToken)
@@ -66,9 +85,9 @@ public class WpfHostedService<TApplication>
     {
         if (_wpfContext is { IsRunning: true, WpfApplication: not null })
         {
-            //If true means that WPF is already shutdown internally. Usually happens when ShutdownMode is set to OnLastWindowClose or OnMainWindowClose
-            //We need to check otherwise if we call Shutdown twice we get an exception
-            bool isShutdown = _wpfContext.WpfApplication.IsWpfShutdown();
+            //If true WPF is already shutting down on its own, e.g. ShutdownMode is OnLastWindowClose or OnMainWindowClose
+            //and the last window was closed. Then there is nothing to stop; the aborted-operation catch below covers the remaining race.
+            bool isShutdown = _wpfContext.Dispatcher.HasShutdownStarted;
             if (!isShutdown)
             {
                 _logger.WpfStopping();
@@ -90,5 +109,22 @@ public class WpfHostedService<TApplication>
                 }
             }
         }
+
+        // Shutdown() only queues the shutdown. Wait until the UI thread has ended, i.e. Exit handlers ran and the components were
+        // disposed, so they can still use their dependencies: the host disposes services right after StopAsync.
+        try
+        {
+            await WaitAsync(_wpfThread.Completed, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The host's shutdown timeout elapsed; disposing the host still waits for the UI thread (WpfThread.Dispose).
+        }
     }
+
+    /// <inheritdoc />
+    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
