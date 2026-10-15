@@ -116,7 +116,7 @@ public class ScenarioTests
         var data = new TheoryData<BuilderKind, LifetimeKind, FailureKind>();
         foreach (var builder in Enum.GetValues<BuilderKind>())
         foreach (var lifetime in Enum.GetValues<LifetimeKind>())
-        foreach (var failure in new[] { FailureKind.ApplicationFactory, FailureKind.LaterHostedService, FailureKind.CanceledDuringInitialization })
+        foreach (var failure in new[] { FailureKind.ApplicationFactory, FailureKind.LaterHostedService, FailureKind.LaterHostedServiceStarted, FailureKind.CanceledDuringInitialization })
         {
             data.Add(builder, lifetime, failure);
         }
@@ -148,7 +148,15 @@ public class ScenarioTests
                 result.Assert(result.Events.All(e => e.Name != "Constructor"), "The application was created although its factory failed.");
                 break;
             case FailureKind.LaterHostedService:
-                // WPF had started; disposing the host shut it down and disposed the components on the UI thread.
+                // WPF starts only after every hosted service has started, so a failing StartAsync means WPF is never created
+                // and no application code can run while the host is disposed.
+                result.Event("FailingHostedServiceStarting");
+                result.Assert(result.Events.All(e => e.Name != "Constructor"), "The application was created although a hosted service failed to start.");
+                break;
+            case FailureKind.LaterHostedServiceStarted:
+                // A hosted service failed in StartedAsync after WPF had started: disposing the host shut WPF down and disposed
+                // the components on the UI thread.
+                result.Event("FailingHostedServiceStarted");
                 result.Event("Exit");
                 result.Assert(result.Event("TrayDispose").Thread == uiThread, "The tray component was not disposed on the UI thread.");
                 break;

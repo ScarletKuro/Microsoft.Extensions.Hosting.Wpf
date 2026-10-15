@@ -48,7 +48,10 @@ public static class Program
         log.Info("IsRunning", context.IsRunning);
 
         // Cleanup only (not reported): give a misbehaving UI thread the chance to show what it does after the host is gone.
-        thread.MainThread.Join(TimeSpan.FromSeconds(5));
+        if ((thread.MainThread.ThreadState & ThreadState.Unstarted) == 0)
+        {
+            thread.MainThread.Join(TimeSpan.FromSeconds(5));
+        }
         log.Info("IsRunningAfterCleanup", context.IsRunning);
         if (Environment.ExitCode != Scenario.HostFailedExitCode)
         {
@@ -137,9 +140,10 @@ public static class Program
         }
 
         services.AddHostedService<ScenarioDriver>();
-        if (scenario.Failure == FailureKind.LaterHostedService)
+        if (scenario.Failure is FailureKind.LaterHostedService or FailureKind.LaterHostedServiceStarted)
         {
-            // Registered after AddWpf, so it starts after WPF is already running.
+            // Registered after AddWpf. Failing in StartAsync, WPF is never created (it starts after every StartAsync);
+            // failing in StartedAsync, WPF is already running and disposing the host must shut it down.
             services.AddHostedService<FailingHostedService>();
         }
     }
@@ -233,20 +237,37 @@ public sealed class BlockingInitializationComponent : ITrayIcon
 }
 
 /// <summary>A hosted service registered after AddWpf whose start fails while WPF is already running.</summary>
-public sealed class FailingHostedService : IHostedService
+public sealed class FailingHostedService : IHostedLifecycleService
 {
     private readonly ScenarioLog _log;
+    private readonly Scenario _scenario;
 
-    public FailingHostedService(ScenarioLog log)
+    public FailingHostedService(ScenarioLog log, Scenario scenario)
     {
         _log = log;
+        _scenario = scenario;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
-    {
-        _log.Event("FailingHostedServiceStarting");
-        throw new InvalidOperationException(Scenario.StartupFailureMessage);
-    }
+    public Task StartingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StartAsync(CancellationToken cancellationToken) => FailAsync(FailureKind.LaterHostedService, "FailingHostedServiceStarting");
+
+    public Task StartedAsync(CancellationToken cancellationToken) => FailAsync(FailureKind.LaterHostedServiceStarted, "FailingHostedServiceStarted");
+
+    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    private Task FailAsync(FailureKind failure, string eventName)
+    {
+        if (_scenario.Failure != failure)
+        {
+            return Task.CompletedTask;
+        }
+
+        _log.Event(eventName);
+        throw new InvalidOperationException(Scenario.StartupFailureMessage);
+    }
 }

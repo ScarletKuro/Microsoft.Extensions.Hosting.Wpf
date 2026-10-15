@@ -46,8 +46,10 @@ public enum FailureKind
     None,
     /// <summary>The WPF application factory throws, before the application exists.</summary>
     ApplicationFactory,
-    /// <summary>A hosted service registered after <c>AddWpf</c> throws in <c>StartAsync</c>, after WPF has started.</summary>
+    /// <summary>A hosted service registered after <c>AddWpf</c> throws in <c>StartAsync</c>; WPF starts only after all have started.</summary>
     LaterHostedService,
+    /// <summary>A hosted service registered after <c>AddWpf</c> throws in <c>StartedAsync</c>, after WPF has started.</summary>
+    LaterHostedServiceStarted,
     /// <summary>Startup is cancelled while the UI thread is still initializing; the host is disposed before initialization ends.</summary>
     CanceledDuringInitialization,
 }

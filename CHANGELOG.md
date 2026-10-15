@@ -20,6 +20,7 @@ Most applications only need the first two steps. Every other break has a one-lin
 | use `IWpfContext.IsLifetimeLinked` | Check `services.GetService<IHostLifetime>() is WpfLifetime` | No longer affects behavior since 4.1.1 |
 | construct `WpfLifetime` yourself | Drop the `IWpfContext` argument | It was unused |
 | call `Extensions.Hosting.Wpf.Bootstrap.WpfHostingExtensions` statically | Use `WpfBootstrapHostingExtensions` (extension-method calls are unaffected) | Clashed with the main package's `WpfHostingExtensions` |
+| use the UI from a hosted service's `StartAsync` | Do it from `IHostApplicationLifetime.ApplicationStarted` | WPF now starts after every hosted service has started, so a failing hosted service never leaves WPF running against a disposed host |
 | call `AddWpf` for two different application types | Register one application | WPF allows only one `Application` per process; this always failed at runtime |
 
 ### Added
@@ -32,6 +33,7 @@ Most applications only need the first two steps. Every other break has a one-lin
 - Minimal hosting and explicit `Main` samples using `Host.CreateApplicationBuilder`.
 
 ### Changed
+- **Breaking:** WPF is now created and started once every hosted service has started (in `IHostedLifecycleService.StartedAsync`, the way ASP.NET Core starts serving requests), instead of in `WpfHostedService.StartAsync` at its registration position. If a hosted service fails to start, WPF is never created, so no application code (`App`, `OnExit`, windows) runs while the failed host is being disposed. Hosted services that use the UI (`IWpfContext.Dispatcher`, `JoinableTaskFactory.SwitchToMainThreadAsync`, ...) in their own `StartAsync` must do that from `IHostApplicationLifetime.ApplicationStarted` instead.
 - **Breaking:** Removed the `netcoreapp3.1` target from all packages. It is out of support and `Microsoft.Extensions.*` 8.x does not support it (it produced a "doesn't support" build warning in consuming apps). Supported: .NET Framework 4.6.2 / 4.8 and .NET 6, 7, 8, 9 and 10, all covered by the tests. Applications on .NET Core 3.1 can stay on 4.x.
 - **Breaking:** `Extensions.Hosting.Wpf` now depends on `Microsoft.Extensions.Hosting` 8.0.1 (previously 6.0.0) and `Extensions.Hosting.Wpf.Bootstrap` on `Microsoft.Extensions.Hosting.Abstractions` 8.0.1 (previously 6.0.0), which raises the minimum `Microsoft.Extensions.*` package versions for consumers.
 - **Breaking:** `Extensions.Hosting.Wpf.Threading` now depends on `Microsoft.VisualStudio.Threading` 17.12.19 (previously 17.5.22), the newest release that still supports .NET 6 / 7 (17.13+ dropped them). Its `VSTHRD` analyzers flow to consuming projects (as before), so newer rules may report new warnings. Applications can reference a newer version themselves.

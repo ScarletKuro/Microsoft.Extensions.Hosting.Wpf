@@ -81,6 +81,11 @@ host's service provider. Use either initialization extension once per applicatio
 the locator extension also calls `Initialize()`. If `AddWpf<App>()` is missing, host
 startup fails with an `InvalidOperationException`.
 
+WPF is created and started once every hosted service has started, the way ASP.NET Core starts
+serving requests. If any hosted service fails to start, WPF is never created. Another hosted service
+that needs the UI (the dispatcher, `JoinableTaskFactory.SwitchToMainThreadAsync`, ...) should use it
+from `IHostApplicationLifetime.ApplicationStarted`, not from its own `StartAsync`.
+
 `AddWpfLifetime()` is optional. With any host lifetime, `AddWpf` stops the host when the WPF
 application exits. `WpfLifetime` replaces the default `ConsoleLifetime` with one suited to a
 windowed application: no Ctrl+C handling or console shutdown hints, WPF status messages (turn them off

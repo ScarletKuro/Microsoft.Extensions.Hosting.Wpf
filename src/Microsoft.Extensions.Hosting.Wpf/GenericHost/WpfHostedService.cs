@@ -10,8 +10,13 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by dependency injection (AddHostedService).")]
+/// <summary>
+/// Starts the WPF UI thread in <see cref="StartedAsync"/>, i.e. only after every hosted service has started successfully
+/// (like ASP.NET Core starts serving requests). If any hosted service fails to start, WPF is never created, so no application
+/// code can run against a host that is being disposed. Stops WPF in <see cref="StopAsync"/>.
+/// </summary>
 internal sealed class WpfHostedService<TApplication>
-    : IHostedService where TApplication : Application, IApplicationInitializeComponent
+    : IHostedLifecycleService where TApplication : Application, IApplicationInitializeComponent
 {
     private readonly ILogger<WpfHostedService<TApplication>> _logger;
     private readonly WpfThread<TApplication> _wpfThread;
@@ -31,7 +36,13 @@ internal sealed class WpfHostedService<TApplication>
     }
 
     /// <inheritdoc />
-    public Task StartAsync(CancellationToken cancellationToken)
+    public Task StartingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StartedAsync(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -88,4 +99,10 @@ internal sealed class WpfHostedService<TApplication>
             }
         }
     }
+
+    /// <inheritdoc />
+    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
