@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Hosting.Wpf.Locator;
 using Microsoft.Extensions.Hosting.Wpf.TrayIcon;
@@ -95,11 +96,19 @@ public sealed class ScenarioApplication : Application, IApplicationInitializeCom
     {
         base.OnStartup(e);
         _log.Event("Startup");
+
+        // A nested dispatcher loop inside OnStartup, like ShowDialog() for a login dialog: everything queued at a higher
+        // priority than ApplicationIdle runs here, while OnStartup has not returned yet.
+        var nestedLoop = new DispatcherFrame();
+        Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() => nestedLoop.Continue = false));
+        Dispatcher.PushFrame(nestedLoop);
+        _log.Event("NestedDispatchReturned");
+
         if (_scenario.Failure == FailureKind.ApplicationStartup)
         {
+            // Thrown after the nested loop: still part of startup, so it must fail host startup.
             throw new InvalidOperationException(Scenario.StartupFailureMessage);
         }
-
 
         var window = new Window
         {
@@ -115,6 +124,8 @@ public sealed class ScenarioApplication : Application, IApplicationInitializeCom
         window.Show();
         _log.Event("WindowShown");
         Started.SetResult(window);
+        // Last statement of OnStartup: the host must not report started before this.
+        _log.Event("StartupReturned");
     }
 
     protected override void OnExit(ExitEventArgs e)

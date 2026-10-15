@@ -47,7 +47,7 @@ public class ScenarioTests
     private static readonly string[] UiLifecycleEvents =
     {
         "Constructor", "InitializeComponent", "Initialize", "LocatorFactory", "InitializeLocator", "TrayInitialize",
-        "Startup", "WindowShown", "SwitchedToMainThread", "Exit", "TrayDispose",
+        "Startup", "NestedDispatchReturned", "WindowShown", "StartupReturned", "SwitchedToMainThread", "Exit", "TrayDispose",
     };
 
     [Theory]
@@ -75,7 +75,7 @@ public class ScenarioTests
             InitializationKind.LocatorInstance or InitializationKind.LocatorInstancePostBuild => new[] { "Initialize", "InitializeLocator" },
             _ => throw new ArgumentOutOfRangeException(nameof(initialization)),
         });
-        expectedUiEvents.AddRange(new[] { "TrayInitialize", "Startup", "WindowShown", "SwitchedToMainThread", "Exit", "TrayDispose" });
+        expectedUiEvents.AddRange(new[] { "TrayInitialize", "Startup", "NestedDispatchReturned", "WindowShown", "StartupReturned", "SwitchedToMainThread", "Exit", "TrayDispose" });
         var uiThread = result.Info("UiThread");
         var uiEvents = result.Events.Where(e => UiLifecycleEvents.Contains(e.Name)).ToList();
         result.Assert(expectedUiEvents.SequenceEqual(uiEvents.Select(e => e.Name)),
@@ -101,6 +101,8 @@ public class ScenarioTests
 
         // The host started only once the application was initialized, and stopped.
         result.Assert(result.IndexOf("HostStarted") > result.IndexOf("TrayInitialize"), "ApplicationStarted was raised before the application was initialized.");
+        // OnStartup runs a nested dispatcher loop: the host may only report started once OnStartup has returned.
+        result.Assert(result.IndexOf("HostStarted") > result.IndexOf("StartupReturned"), "The host reported started while OnStartup was still running (nested dispatcher loop).");
         result.Event("HostStopping");
         result.Event("HostStopped");
 
@@ -167,7 +169,8 @@ public class ScenarioTests
             case FailureKind.ApplicationStartup:
                 // OnStartup threw inside Application.Run(): host startup fails with that exception (checked above) instead of
                 // the process crashing from the UI thread, and the components are disposed on the UI thread.
-                result.Event("Startup");
+                // Thrown after a nested dispatcher loop inside OnStartup: startup was still in progress.
+                result.Event("NestedDispatchReturned");
                 result.Assert(result.Event("TrayDispose").Thread == uiThread, "The tray component was not disposed on the UI thread.");
                 break;
             case FailureKind.LaterHostedService:

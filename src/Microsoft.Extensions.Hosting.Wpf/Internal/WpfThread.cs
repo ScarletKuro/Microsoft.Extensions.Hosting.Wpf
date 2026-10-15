@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 /// </summary>
 /// <remarks>
 /// Lifecycle of the UI thread: create and initialize the application and its components, run it, and report it as started
-/// once its Startup has completed (<see cref="Started"/>). Failures until then fail host startup. Whoever stops the
+/// once its startup operation (OnStartup) has completed (<see cref="Started"/>). Failures until then fail host startup. Whoever stops the
 /// application early (<see cref="StopAndWait"/>) waits for the UI thread to end, so application cleanup never runs
 /// against services the host has already disposed.
 /// </remarks>
@@ -35,6 +35,8 @@ internal sealed class WpfThread<TApplication>
     private SynchronizationContext? _synchronizationContext;
     private readonly TaskCompletionSource<bool> _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource<bool> _completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    // Only touched on the UI thread (dispatcher hooks).
+    private DispatcherOperation? _startupOperation;
 
     IWpfContext IWpfThread.WpfContext => _wpfContext;
 
@@ -198,8 +200,6 @@ internal sealed class WpfThread<TApplication>
             _wpfContext.IsRunning = true;
         }
 
-        // Runs inside Run() after the application's Startup (raised by a higher priority operation queued earlier).
-        application.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(OnApplicationStarted));
         try
         {
             //Blocking method until application exit.
@@ -219,7 +219,32 @@ internal sealed class WpfThread<TApplication>
     }
 
     /// <summary>
-    /// Runs on the UI thread once the application's Startup has completed.
+    /// Tracks the dispatcher operation that runs the application's startup (Startup event, OnStartup).
+    /// Application's constructor queues it with the highest priority, so it is the first operation to run. Its completion,
+    /// not dispatcher priority, marks startup as done: OnStartup may run nested dispatcher loops (e.g. ShowDialog), in which
+    /// any other queued operation would run while OnStartup has not returned yet.
+    /// </summary>
+    private void OnDispatcherOperationStarted(object? sender, DispatcherHookEventArgs e)
+    {
+        _startupOperation ??= e.Operation;
+    }
+
+    private void OnDispatcherOperationCompleted(object? sender, DispatcherHookEventArgs e)
+    {
+        // An operation that throws does not complete: the exception then fails host startup (see RunUiThread).
+        if (_startupOperation is null || e.Operation != _startupOperation)
+        {
+            return;
+        }
+
+        var hooks = e.Dispatcher.Hooks;
+        hooks.OperationStarted -= OnDispatcherOperationStarted;
+        hooks.OperationCompleted -= OnDispatcherOperationCompleted;
+        OnApplicationStarted();
+    }
+
+    /// <summary>
+    /// Runs on the UI thread once the application's startup (OnStartup) has returned.
     /// </summary>
     private void OnApplicationStarted()
     {
@@ -247,9 +272,14 @@ internal sealed class WpfThread<TApplication>
     private void PreUiThreadStart()
     {
         // Create our SynchronizationContext, and install it:
-        var synchronizationContext = new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher);
+        var dispatcher = Dispatcher.CurrentDispatcher;
+        var synchronizationContext = new DispatcherSynchronizationContext(dispatcher);
         SynchronizationContext.SetSynchronizationContext(synchronizationContext);
         _synchronizationContext = synchronizationContext;
+
+        // Before the application is created, so its startup operation is the first one these hooks see.
+        dispatcher.Hooks.OperationStarted += OnDispatcherOperationStarted;
+        dispatcher.Hooks.OperationCompleted += OnDispatcherOperationCompleted;
 
         var application = CreateApplication();
 
