@@ -7,6 +7,11 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
+/// <summary>
+/// <see cref="IHostLifetime"/> for a windowed WPF application, used instead of the default ConsoleLifetime: it does not handle
+/// Ctrl+C or print console shutdown hints, logs WPF status messages (see <see cref="WpfLifetimeOptions"/>), and waits for the host
+/// to shut down gracefully when the process exits. Stopping the host when WPF exits does not depend on it.
+/// </summary>
 public class WpfLifetime : IHostLifetime, IDisposable
 {
 #pragma warning disable CA2213

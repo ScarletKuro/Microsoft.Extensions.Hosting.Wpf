@@ -80,8 +80,11 @@ host's service provider. Use either initialization extension once per applicatio
 the locator extension also calls `Initialize()`. If `AddWpf<App>()` is missing, host
 startup fails with an `InvalidOperationException`.
 
-`AddWpfLifetime(options => options.SuppressStatusMessages = true)` configures lifetime
-logging. It is optional; without it, WPF continues to use the host's default lifetime.
+`AddWpfLifetime()` is optional. With any host lifetime, `AddWpf` stops the host when the WPF
+application exits. `WpfLifetime` replaces the default `ConsoleLifetime` with one suited to a
+windowed application: no Ctrl+C handling or console shutdown hints, WPF status messages (turn them off
+with `AddWpfLifetime(options => options.SuppressStatusMessages = true)`), and a graceful host
+shutdown when the process exits.
 
 With `IHostBuilder`, use the same `IServiceCollection` extensions or the `Use*` shortcuts:
 

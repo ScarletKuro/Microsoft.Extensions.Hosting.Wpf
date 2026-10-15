@@ -58,8 +58,10 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Uses <see cref="WpfLifetime"/> as the host lifetime: the host stops when the WPF application exits.
-    /// This unblocks extensions like RunAsync and WaitForShutdownAsync.
+    /// Uses <see cref="WpfLifetime"/> as the host lifetime instead of the default ConsoleLifetime. Optional: with any lifetime,
+    /// AddWpf already stops the host when the WPF application exits. WpfLifetime suits a windowed application: it does not
+    /// handle Ctrl+C or print console shutdown hints, logs WPF status messages (see <see cref="WpfLifetimeOptions"/>),
+    /// and waits for the host to shut down gracefully when the process exits.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
     /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
@@ -73,8 +75,10 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Uses <see cref="WpfLifetime"/> as the host lifetime: the host stops when the WPF application exits.
-    /// This unblocks extensions like RunAsync and WaitForShutdownAsync.
+    /// Uses <see cref="WpfLifetime"/> as the host lifetime instead of the default ConsoleLifetime. Optional: with any lifetime,
+    /// AddWpf already stops the host when the WPF application exits. WpfLifetime suits a windowed application: it does not
+    /// handle Ctrl+C or print console shutdown hints, logs WPF status messages (see <see cref="WpfLifetimeOptions"/>),
+    /// and waits for the host to shut down gracefully when the process exits.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
     /// <param name="configureOptions">The delegate for configuring the <see cref="WpfLifetime"/>.</param>

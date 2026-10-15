@@ -11,8 +11,10 @@ namespace Microsoft.Extensions.Hosting.Wpf;
 public static class WpfHostingExtensions
 {
     /// <summary>
-    /// Listens for Application.Current.Exit to start the shutdown process.
-    /// This will unblock extensions like RunAsync and WaitForShutdownAsync.
+    /// Uses <see cref="WpfLifetime"/> as the host lifetime instead of the default ConsoleLifetime. Optional: with any lifetime,
+    /// AddWpf already stops the host when the WPF application exits. WpfLifetime suits a windowed application: it does not
+    /// handle Ctrl+C or print console shutdown hints, logs WPF status messages (see <see cref="WpfLifetimeOptions"/>),
+    /// and waits for the host to shut down gracefully when the process exits.
     /// </summary>
     /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
     /// <param name="configureOptions">The delegate for configuring the <see cref="WpfLifetime"/>.</param>
@@ -26,8 +28,10 @@ public static class WpfHostingExtensions
     }
 
     /// <summary>
-    /// Listens for Application.Current.Exit to start the shutdown process.
-    /// This will unblock extensions like RunAsync and WaitForShutdownAsync.
+    /// Uses <see cref="WpfLifetime"/> as the host lifetime instead of the default ConsoleLifetime. Optional: with any lifetime,
+    /// AddWpf already stops the host when the WPF application exits. WpfLifetime suits a windowed application: it does not
+    /// handle Ctrl+C or print console shutdown hints, logs WPF status messages (see <see cref="WpfLifetimeOptions"/>),
+    /// and waits for the host to shut down gracefully when the process exits.
     /// </summary>
     /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
     /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
