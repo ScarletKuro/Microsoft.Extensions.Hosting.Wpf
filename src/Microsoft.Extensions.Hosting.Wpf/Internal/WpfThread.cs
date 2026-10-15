@@ -227,7 +227,9 @@ internal sealed class WpfThread<TApplication>
     /// </summary>
     private void OnDispatcherOperationPosted(object? sender, DispatcherHookEventArgs e)
     {
-        if (_startupOperation is null && Application.Current is not null)
+        // The constructor queues it on the UI thread; work posted concurrently from other threads (this hook runs on the
+        // posting thread) is ignored, which also keeps _startupOperation a UI-thread-only field.
+        if (e.Dispatcher.CheckAccess() && _startupOperation is null && Application.Current is not null)
         {
             _startupOperation = e.Operation;
         }

@@ -123,10 +123,35 @@ public static class Program
         {
             services.AddWpf(provider =>
             {
+                var dispatcher = Dispatcher.CurrentDispatcher;
                 // Queued before the application exists, at the same (highest) priority as WPF's own startup operation,
                 // so it runs first: it must not be mistaken for the application's startup.
-                Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => log.Event("FactoryQueuedWork")));
-                return ActivatorUtilities.CreateInstance<ScenarioApplication>(provider);
+                dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => log.Event("FactoryQueuedWork")));
+
+                // A worker keeps posting to the UI dispatcher while the application is constructed: none of those
+                // operations may be mistaken for the application's startup either.
+                var constructing = true;
+                var workerPosts = 0;
+                var worker = new Thread(() =>
+                {
+                    while (Volatile.Read(ref constructing))
+                    {
+                        dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { }));
+                        workerPosts++;
+                    }
+                }) { IsBackground = true };
+                worker.Start();
+                // Let the worker get going before construction starts.
+                while (Volatile.Read(ref workerPosts) == 0)
+                {
+                    Thread.Yield();
+                }
+
+                var application = ActivatorUtilities.CreateInstance<ScenarioApplication>(provider);
+                Volatile.Write(ref constructing, false);
+                worker.Join();
+                log.Info("WorkerPostsDuringConstruction", workerPosts);
+                return application;
             });
         }
         else
