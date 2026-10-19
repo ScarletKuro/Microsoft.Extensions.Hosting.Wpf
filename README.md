@@ -55,9 +55,9 @@ public class Program
 }
 ```
 
-The same setup works with top-level statements in a code-only WPF application
-(see [HostingMinimal](samples/HostingMinimal)). For an application with `App.xaml`,
-use the explicit `Main` above and set `StartupObject` as shown in step 3.
+The same setup works with top-level statements: in a code-only WPF application
+(see [HostingMinimal](samples/HostingMinimal)), or in one with `App.xaml` when WPF's
+generated `Main` is turned off as shown in step 3.
 
 ```csharp
 var builder = Host.CreateApplicationBuilder(args);
@@ -122,9 +122,24 @@ built host. Configure initialization in only one place: combining the pre-build 
 post-build extensions throws.
 
 ### 3. Update `.csproj`
+WPF generates a `Main` for `App.xaml` that creates and runs the application itself. Make your
+`Program` the entry point instead:
+
 ```xml
 <StartupObject>[Namespace].Program</StartupObject>
 ```
+
+Alternatively, stop WPF from generating that `Main`. No `StartupObject` is needed then, and
+`Program.cs` can use top-level statements:
+
+```xml
+<EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+```
+
+`App.xaml` is then compiled like any other XAML file: `InitializeComponent()` (with `StartupUri`
+and the application resources) is still generated, only `Main` is not. Design-time tools that find
+application resources through the application definition, such as the Visual Studio XAML designer,
+may no longer resolve resources from `App.xaml`; the running application is not affected.
 
 For the full guide including **ViewModel Locator**, **constructor injection**, and more, see the **[Wiki](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/wiki)**.
 
