@@ -5,7 +5,8 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
-    <StartupObject>HostingSimple.Program</StartupObject>
+    <!-- App.xaml is compiled without WPF's generated Main, so Program.cs (top-level statements) is the entry point. -->
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,39 +1,25 @@
-﻿using HostingSimple.Locator;
+﻿using HostingSimple;
+using HostingSimple.Locator;
 using HostingSimple.Service;
 using HostingSimple.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Wpf;
 
-namespace HostingSimple
-{
-    public class Program
-    {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        public static void Main(string[] args)
-        {
-            var builder = Host.CreateApplicationBuilder(args);
-            ConfigureServices(builder.Services);
-            builder.Services.AddWpfLifetime();
-            builder.Services.AddWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider));
+// Top-level statements work with App.xaml because WPF's generated Main is turned off:
+// see EnableDefaultApplicationDefinition in HostingSimple.csproj.
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddLogging();
+builder.Services.AddWpf<App>();
+builder.Services.AddWpfLifetime();
+builder.Services.AddWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider));
 
-            using IHost host = builder.Build();
-            host.Run();
-        }
+//Add our view models
+builder.Services.AddTransient<MainViewModel>();
+builder.Services.AddTransient<ChildViewModel>();
 
-        private static void ConfigureServices(IServiceCollection services)
-        {
-            services.AddLogging();
-            services.AddWpf<App>();
+//Add our custom services for wpf
+builder.Services.AddSingleton<WindowService>();
 
-            //Add our view models
-            services.AddTransient<MainViewModel>();
-            services.AddTransient<ChildViewModel>();
-
-            //Add our custom services for wpf
-            services.AddSingleton<WindowService>();
-        }
-    }
-}
+using var host = builder.Build();
+host.Run();

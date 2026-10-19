@@ -7,22 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Migrating from 4.x
-Most applications only need the first two steps. Every other break has a one-line fix:
+Most applications only need the first two rows:
 
 | If you… | Do this | Why it changed |
 |---|---|---|
 | target `netcoreapp3.1` | Move to .NET 6+ (or .NET Framework 4.6.2 / 4.8), or stay on 4.x | Out of support since 2022, and `Microsoft.Extensions.*` 8.x does not support it (build warnings in your app) |
 | reference `Microsoft.Extensions.*` 6.x/7.x | Update to 8.x | `IHostApplicationBuilder` (the new API) only exists from `Microsoft.Extensions.Hosting.Abstractions` 8.0 |
 | reference `Microsoft.VisualStudio.Threading` < 17.12 (Threading package) | Update; review new `VSTHRD` analyzer warnings once, or tune them in `.editorconfig` | 17.12 is the newest release that still supports .NET 6 / 7; the analyzers come with it |
+| use the UI from a hosted service's `StartAsync` | Do it from `IHostApplicationLifetime.ApplicationStarted`. There is no compile error for this one | WPF now starts after every hosted service has started, so a failing hosted service never leaves WPF running against a disposed host |
 | name `WpfLifeTimeOptions` explicitly | Rename to `WpfLifetimeOptions` (`options => …` lambdas are unaffected) | Consistent with `WpfLifetime` / `IHostLifetime` |
-| instantiate `AbstractViewModelLocatorHost<T>` directly | Derive a class from it (the samples already do) | It is a base class; the name already said so |
-| reference `WpfHostedService<TApplication>` | Remove it; `AddWpf<TApplication>()` registers it | Implementation detail tied to internal types |
-| use `IWpfContext.IsLifetimeLinked` | Check `services.GetService<IHostLifetime>() is WpfLifetime` | No longer affects behavior since 4.1.1 |
-| construct `WpfLifetime` yourself | Drop the `IWpfContext` argument | It was unused |
-| call `Extensions.Hosting.Wpf.Bootstrap.WpfHostingExtensions` statically | Use `WpfBootstrapHostingExtensions` (extension-method calls are unaffected) | Clashed with the main package's `WpfHostingExtensions` |
-| use the UI from a hosted service's `StartAsync` | Do it from `IHostApplicationLifetime.ApplicationStarted` | WPF now starts after every hosted service has started, so a failing hosted service never leaves WPF running against a disposed host |
-| call `IWpfThread.Start()` | Remove the call; the library starts the WPF thread itself | Starting it outside the host lifecycle bypassed startup ordering and failure handling |
-| call `AddWpf` for two different application types | Register one application | WPF allows only one `Application` per process; this always failed at runtime |
+
+Other breaking changes affect rarely used APIs and show up as compile errors; each is listed under **Breaking** in Changed below.
 
 ### Added
 - An exception thrown from `OnStartup` or a `Startup` handler (also after a nested dispatcher loop such as `ShowDialog()`) now fails host startup (`host.Run()` / `StartAsync` throws it) instead of crashing the process from the UI thread.
@@ -32,10 +27,12 @@ Most applications only need the first two steps. Every other break has a one-lin
   - `AddWpfViewModelLocator<TApplication, TViewModelLocator>(viewModelLocator | viewModelLocatorFunc)`
 - `IHostBuilder` overloads of `UseWpfInitialization` and `UseWpfViewModelLocator` that configure initialization before `Build()`.
 - Host startup fails with a clear message, before any hosted service starts, when initialization is configured but `AddWpf<TApplication>()` was not called.
-- Minimal hosting and explicit `Main` samples using `Host.CreateApplicationBuilder`.
+- `HostingMinimal` sample: `Host.CreateApplicationBuilder` with top-level statements in a code-only application. `HostingSimple` now uses `Host.CreateApplicationBuilder` with top-level statements and `App.xaml`.
+- README: turning off WPF's generated `Main` with `EnableDefaultApplicationDefinition` as an alternative to `StartupObject`.
 
 ### Changed
-- **Breaking:** WPF is now created and started once every hosted service has started (in `IHostedLifecycleService.StartedAsync`, the way ASP.NET Core starts serving requests), instead of in `WpfHostedService.StartAsync` at its registration position; `StartedAsync` completes once `OnStartup` has returned (also when it runs a nested dispatcher loop, e.g. `ShowDialog()`). If a hosted service fails to start, WPF is never created, so no application code (`App`, `OnExit`, windows) runs while the failed host is being disposed. Hosted services that use the UI (`IWpfContext.Dispatcher`, `JoinableTaskFactory.SwitchToMainThreadAsync`, ...) in their own `StartAsync` must do that from `IHostApplicationLifetime.ApplicationStarted` instead. WPF is also stopped first: in `IHostedLifecycleService.StoppingAsync`, before any hosted service's `StopAsync`, and the host waits until WPF has fully exited (`OnExit`, component disposal), up to `HostOptions.ShutdownTimeout`, so application cleanup can still use other hosted services and all registered services.
+- **Breaking:** WPF is now created and started once every hosted service has started (in `IHostedLifecycleService.StartedAsync`, the way ASP.NET Core starts serving requests), instead of in `WpfHostedService.StartAsync` at its registration position; `StartedAsync` completes once `OnStartup` has returned (also when it runs a nested dispatcher loop, e.g. `ShowDialog()`). If a hosted service fails to start, WPF is never created, so no application code (`App`, `OnExit`, windows) runs while the failed host is being disposed. Hosted services that use the UI (`IWpfContext.Dispatcher`, `JoinableTaskFactory.SwitchToMainThreadAsync`, ...) in their own `StartAsync` must do that from `IHostApplicationLifetime.ApplicationStarted` instead.
+- Started last, WPF is now also stopped first: in `IHostedLifecycleService.StoppingAsync`, before any hosted service's `StopAsync`. The host waits until WPF has fully exited (`OnExit`, component disposal), up to `HostOptions.ShutdownTimeout`, so application cleanup can still use other hosted services and all registered services.
 - **Breaking:** Removed the `netcoreapp3.1` target from all packages. It is out of support and `Microsoft.Extensions.*` 8.x does not support it (it produced a "doesn't support" build warning in consuming apps). Supported: .NET Framework 4.6.2 / 4.8 and .NET 6, 7, 8, 9 and 10, all covered by the tests. Applications on .NET Core 3.1 can stay on 4.x.
 - **Breaking:** `Extensions.Hosting.Wpf` now depends on `Microsoft.Extensions.Hosting` 8.0.1 (previously 6.0.0) and `Extensions.Hosting.Wpf.Bootstrap` on `Microsoft.Extensions.Hosting.Abstractions` 8.0.1 (previously 6.0.0), which raises the minimum `Microsoft.Extensions.*` package versions for consumers.
 - **Breaking:** `Extensions.Hosting.Wpf.Threading` now depends on `Microsoft.VisualStudio.Threading` 17.12.19 (previously 17.5.22), the newest release that still supports .NET 6 / 7 (17.13+ dropped them). Its `VSTHRD` analyzers flow to consuming projects (as before), so newer rules may report new warnings. Applications can reference a newer version themselves.

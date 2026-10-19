@@ -55,9 +55,9 @@ public class Program
 }
 ```
 
-The same setup works with top-level statements in a code-only WPF application
-(see [HostingMinimal](samples/HostingMinimal)). For an application with `App.xaml`,
-use the explicit `Main` above and set `StartupObject` as shown in step 3.
+The same setup works with top-level statements: in a code-only WPF application
+(see [HostingMinimal](samples/HostingMinimal)), or in one with `App.xaml` when WPF's
+generated `Main` is turned off as shown in step 3.
 
 ```csharp
 var builder = Host.CreateApplicationBuilder(args);
@@ -122,15 +122,28 @@ built host. Configure initialization in only one place: combining the pre-build 
 post-build extensions throws.
 
 ### 3. Update `.csproj`
+WPF generates a `Main` for `App.xaml` that creates and runs the application itself. Make your
+`Program` the entry point instead:
+
 ```xml
 <StartupObject>[Namespace].Program</StartupObject>
 ```
+
+Alternatively, stop WPF from generating that `Main`. No `StartupObject` is needed then, and
+`Program.cs` can use top-level statements:
+
+```xml
+<EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+```
+
+`App.xaml` is then compiled like any other XAML file: `InitializeComponent()` (with `StartupUri`
+and the application resources) is still generated, only `Main` is not.
 
 For the full guide including **ViewModel Locator**, **constructor injection**, and more, see the **[Wiki](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/wiki)**.
 
 ## Samples
 1. [HostingMinimal](samples/HostingMinimal): Top-level statements with `Host.CreateApplicationBuilder` and a code-only WPF application.
-2. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingSimple): An explicit `Main` using `Host.CreateApplicationBuilder`, XAML, and a view model locator.
+2. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingSimple): Top-level statements with `App.xaml` (`EnableDefaultApplicationDefinition` set to `false` instead of `StartupObject`), XAML, and a view model locator.
 3. [HostingReactiveUI](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUI): An advanced example using **NLog** for logging, **ReactiveUI** as the MVVM framework, and the **TrayIcon** feature.
 4. [HostingReactiveUISimpleInjector](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjector): Incorporates **SimpleInjector** alongside **ReactiveUI**. Demonstrates that you're not limited to `Microsoft.DependencyInjection`.
 5. [HostingReactiveUISimpleInjectorAmbientScope](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjectorAmbientScope): Demonstrates `AsyncScopedLifestyle` with **SimpleInjector** for [ambient-scoping](https://blogs.cuttingedge.it/steven/posts/2019/ambient-composition-model/) and integrates **Threading**.
