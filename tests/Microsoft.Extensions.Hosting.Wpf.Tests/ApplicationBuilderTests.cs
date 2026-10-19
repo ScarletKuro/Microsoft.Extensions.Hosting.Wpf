@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Windows;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -139,12 +138,11 @@ public class ApplicationBuilderTests
         // Disposing releases the shutdown wait in the ProcessExit handler, which otherwise waits for the host to stop.
         lifetime.Dispose();
         // AppDomain.ProcessExit only fires when the process ends, so invoke the handler directly.
-        var onProcessExit = typeof(WpfLifetime).GetMethod("OnProcessExit", BindingFlags.Instance | BindingFlags.NonPublic)!;
         try
         {
             // WPF sets this from Application.Shutdown(exitCode).
             Environment.ExitCode = 3;
-            onProcessExit.Invoke(lifetime, new object?[] { null, EventArgs.Empty });
+            lifetime.OnProcessExit(null, EventArgs.Empty);
             Assert.Equal(3, Environment.ExitCode);
         }
         finally
