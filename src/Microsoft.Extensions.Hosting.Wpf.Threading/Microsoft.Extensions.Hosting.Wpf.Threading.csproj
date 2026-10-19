@@ -63,4 +63,8 @@
     <ProjectReference Include="..\Microsoft.Extensions.Hosting.Wpf\Microsoft.Extensions.Hosting.Wpf.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Hosting.Wpf.Tests" Key="$(AssemblySignPublicKey)" />
+  </ItemGroup>
+
 </Project>

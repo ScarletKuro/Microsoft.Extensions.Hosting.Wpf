@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.Extensions.Hosting.Wpf.Threading;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Tests;
@@ -32,12 +33,7 @@ public sealed class WpfThreadSynchronizationContextTests
         Assert.Throws<InvalidOperationException>(() => context.Send(_ => { }, null));
     }
 
-    // Internal and the assemblies are strong-named, so it is created by reflection.
-    private static SynchronizationContext Create(IWpfThread thread)
-    {
-        var type = typeof(Threading.ServiceCollectionExtensions).Assembly.GetType("Microsoft.Extensions.Hosting.Wpf.Threading.WpfThreadSynchronizationContext", throwOnError: true)!;
-        return (SynchronizationContext)Activator.CreateInstance(type, thread)!;
-    }
+    private static WpfThreadSynchronizationContext Create(IWpfThread thread) => new(thread);
 
     private sealed class FakeWpfThread : IWpfThread
     {
