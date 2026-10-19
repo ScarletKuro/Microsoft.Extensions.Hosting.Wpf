@@ -3,56 +3,80 @@ name: release
 on:
   push:
     tags:
-      - '*'
+      # Matches SemVer release tags: 5.0.0, 5.1.0-preview.1, 5.1.0-rc.1, etc. The tag is the package version.
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-*'
 
 jobs:
-  validate:
-    name: Validate release tag
+  version:
+    name: Version from tag
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      assembly_version: ${{ steps.get_version.outputs.assembly_version }}
+      file_version: ${{ steps.get_version.outputs.file_version }}
     steps:
-      - name: Validate release tag
-        shell: pwsh
+      - name: Extract version from tag
+        id: get_version
+        shell: bash
         run: |
-          if ("${env:GITHUB_REF_NAME}" -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
-            Write-Error "Tag ${env:GITHUB_REF_NAME} is not a release tag in X.Y.Z form."
-          }
+          set -euo pipefail
+
+          version="$GITHUB_REF_NAME"
+
+          if [[ ! "$version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not a valid SemVer package version. Use 5.0.0 or 5.1.0-preview.1."
+            exit 1
+          fi
+
+          # The assemblies are strong-named: keep the assembly version at major.minor.0.0, so patch releases do not
+          # require binding redirects on .NET Framework. Package and file versions follow the full tag.
+          assembly_version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.0.0"
+          # Set explicitly: the SDK would otherwise derive the file version from the assembly version.
+          file_version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}.0"
+
+          echo "version=$version, assembly version=$assembly_version, file version=$file_version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "assembly_version=$assembly_version" >> "$GITHUB_OUTPUT"
+          echo "file_version=$file_version" >> "$GITHUB_OUTPUT"
 
   # Nothing is published unless the full test matrix passes on the tagged commit.
   test:
-    needs: validate
+    needs: version
     uses: ./.github/workflows/test.yml
 
   publish:
     name: Publish release packages
-    needs: test
+    needs: [version, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+    env:
+      VERSION_PROPERTIES: >-
+        -p:Version=${{ needs.version.outputs.version }}
+        -p:AssemblyVersion=${{ needs.version.outputs.assembly_version }}
+        -p:FileVersion=${{ needs.version.outputs.file_version }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
           cache: true
-          cache-dependency-path: |
-            src/**/*.csproj
-            version.json
+          cache-dependency-path: src/**/*.csproj
 
       - name: Restore
         run: dotnet restore Microsoft.Extensions.Hosting.Wpf.slnx
 
       - name: Build
-        run: dotnet build Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-restore
+        run: dotnet build Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-restore ${{ env.VERSION_PROPERTIES }}
 
       - name: Pack
-        run: dotnet pack Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-build -o artifacts/packages
+        run: dotnet pack Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-build -o artifacts/packages ${{ env.VERSION_PROPERTIES }}
 
       - name: NuGet login
         id: nuget-login
