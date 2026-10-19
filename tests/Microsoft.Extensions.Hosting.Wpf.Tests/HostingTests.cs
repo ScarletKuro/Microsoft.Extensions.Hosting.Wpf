@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Tests;
 
-// Post-build IHost extensions. The real UI startup lives in ApplicationBuilderTests:
+// Post-build IHost extensions. The real UI startup lives in ScenarioTests (one process per scenario):
 // WPF allows only one Application per AppDomain.
 public class HostingTests
 {
