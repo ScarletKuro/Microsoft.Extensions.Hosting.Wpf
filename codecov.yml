@@ -1,0 +1,12 @@
+codecov:
+  branch: main
+
+coverage:
+  precision: 2
+  round: down
+  range: 50...100
+
+# Only the library packages count: tests/ also holds the scenario app, which runs the library in child processes.
+ignore:
+  - "tests/**"
+  - "samples/**"

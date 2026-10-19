@@ -22,5 +22,20 @@ jobs:
             9.0.x
             10.0.x
 
+      # Microsoft Code Coverage (part of Microsoft.NET.Test.Sdk) also collects from child processes, so the scenario
+      # tests, which run the library in their own processes, count towards coverage.
       - name: Test
-        run: dotnet test tests/Microsoft.Extensions.Hosting.Wpf.Tests/Microsoft.Extensions.Hosting.Wpf.Tests.csproj -c Release
+        run: >
+          dotnet test tests/Microsoft.Extensions.Hosting.Wpf.Tests/Microsoft.Extensions.Hosting.Wpf.Tests.csproj -c Release
+          --collect "Code Coverage;Format=cobertura"
+          --results-directory ./coverage
+
+      # Listed explicitly: Codecov's report discovery does not recognise "*.cobertura.xml" file names.
+      # Not fatal: a Codecov outage must not block a release (release.yml runs this workflow).
+      - name: Upload coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/**/*.cobertura.xml
+          fail_ci_if_error: false

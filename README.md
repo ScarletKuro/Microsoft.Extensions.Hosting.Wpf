@@ -2,6 +2,7 @@
 [![Nuget](https://img.shields.io/nuget/v/Extensions.Hosting.Wpf?color=ff4081&logo=nuget)](https://www.nuget.org/packages/Extensions.Hosting.Wpf/)
 [![Nuget](https://img.shields.io/nuget/dt/Extensions.Hosting.Wpf?color=ff4081&label=nuget%20downloads&logo=nuget)](https://www.nuget.org/packages/Extensions.Hosting.Wpf/)
 [![GitHub](https://img.shields.io/github/license/ScarletKuro/Microsoft.Extensions.Hosting.Wpf?color=594ae2&logo=github)](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/blob/main/LICENSE)
+[![codecov](https://codecov.io/gh/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/graph/badge.svg?token=ZSZ5DTX4J2)](https://codecov.io/gh/ScarletKuro/Microsoft.Extensions.Hosting.Wpf)
 
 Unofficial implementation of Microsoft.Extensions.Hosting for WPF. It is inspired by [Dapplo](https://github.com/dapplo/Dapplo.Microsoft.Extensions.Hosting) and this extensions is focused only on WPF and doesn't have Plugins, SingleInstance etc features like Dapplo. It's main feature is to provide the ability to bind DataContext with ViewModels directly in XAML where the ViewModel gets resolved by DI.
 This library also has few extensions packages to add features like tray icon, thread switching between main thread and threadpool thread, 3rd party DI support.
