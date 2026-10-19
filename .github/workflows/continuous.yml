@@ -14,6 +14,9 @@ jobs:
   build:
     name: Build and pack
     runs-on: ubuntu-latest
+    env:
+      # Identifies which push a CI package came from; release versions come from the tag (release.yml).
+      CI_VERSION: 0.0.0-ci.${{ github.run_number }}
 
     steps:
       - name: Checkout
@@ -30,10 +33,10 @@ jobs:
         run: dotnet restore Microsoft.Extensions.Hosting.Wpf.slnx
 
       - name: Build
-        run: dotnet build Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-restore
+        run: dotnet build Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-restore -p:Version=${{ env.CI_VERSION }}
 
       - name: Pack
-        run: dotnet pack Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-build -o artifacts/packages
+        run: dotnet pack Microsoft.Extensions.Hosting.Wpf.slnx -c Release --no-build -o artifacts/packages -p:Version=${{ env.CI_VERSION }}
 
       - name: Upload packages
         uses: actions/upload-artifact@v7
