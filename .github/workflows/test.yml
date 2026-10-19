@@ -6,20 +6,34 @@ on:
 
 jobs:
   test:
-    name: Test WPF hosting on Windows
+    name: Test WPF hosting (${{ matrix.framework }})
     runs-on: windows-latest
+    # One runner per target framework: the scenario tests start a WPF process per case, and five frameworks sharing
+    # one runner's CPUs made each of them several times slower than running alone.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - framework: net6.0-windows
+            runtime: 6.0.x
+          - framework: net7.0-windows
+            runtime: 7.0.x
+          - framework: net8.0-windows
+            runtime: 8.0.x
+          - framework: net9.0-windows
+            runtime: 9.0.x
+          - framework: net10.0-windows
+            runtime: 10.0.x
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # The .NET 10 SDK builds every target; the matrix entry's runtime runs the tests.
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
-            6.0.x
-            7.0.x
-            8.0.x
-            9.0.x
+            ${{ matrix.runtime }}
             10.0.x
 
       # Microsoft Code Coverage (part of Microsoft.NET.Test.Sdk) also collects from child processes, so the scenario
@@ -27,15 +41,18 @@ jobs:
       - name: Test
         run: >
           dotnet test tests/Microsoft.Extensions.Hosting.Wpf.Tests/Microsoft.Extensions.Hosting.Wpf.Tests.csproj -c Release
+          -f ${{ matrix.framework }}
           --collect "Code Coverage;Format=cobertura"
           --results-directory ./coverage
 
       # Listed explicitly: Codecov's report discovery does not recognise "*.cobertura.xml" file names.
       # Not fatal: a Codecov outage must not block a release (release.yml runs this workflow).
+      # Codecov merges the per-framework uploads of a commit.
       - name: Upload coverage to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/**/*.cobertura.xml
+          flags: ${{ matrix.framework }}
           fail_ci_if_error: false
