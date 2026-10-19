@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Windows;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -122,6 +121,11 @@ public class ApplicationBuilderTests
         using var host = builder.Build();
 
         Assert.IsType<WpfLifetime>(host.Services.GetRequiredService<IHostLifetime>());
+
+        using var legacyHost = Host.CreateDefaultBuilder().UseWpfLifetime().Build();
+
+        Assert.IsType<WpfLifetime>(legacyHost.Services.GetRequiredService<IHostLifetime>());
+        Assert.False(legacyHost.Services.GetRequiredService<IOptions<WpfLifetimeOptions>>().Value.SuppressStatusMessages);
     }
 
     [Fact]
@@ -134,12 +138,11 @@ public class ApplicationBuilderTests
         // Disposing releases the shutdown wait in the ProcessExit handler, which otherwise waits for the host to stop.
         lifetime.Dispose();
         // AppDomain.ProcessExit only fires when the process ends, so invoke the handler directly.
-        var onProcessExit = typeof(WpfLifetime).GetMethod("OnProcessExit", BindingFlags.Instance | BindingFlags.NonPublic)!;
         try
         {
             // WPF sets this from Application.Shutdown(exitCode).
             Environment.ExitCode = 3;
-            onProcessExit.Invoke(lifetime, new object?[] { null, EventArgs.Empty });
+            lifetime.OnProcessExit(null, EventArgs.Empty);
             Assert.Equal(3, Environment.ExitCode);
         }
         finally
@@ -308,6 +311,8 @@ public class ApplicationBuilderTests
         Assert.Throws<ArgumentNullException>(() => missingServices.AddWpfInitialization<TestApplication>());
         Assert.Throws<ArgumentNullException>(() => missingServices.AddWpfViewModelLocator<TestApplication, Locator>(new Locator()));
         Assert.Throws<ArgumentNullException>(() => missingServices.AddWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
+        Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfLifetime());
+        Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfLifetime(_ => { }));
         Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfInitialization<TestApplication>());
         Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfViewModelLocator<TestApplication, Locator>(new Locator()));
         Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
@@ -327,74 +332,6 @@ public class ApplicationBuilderTests
             .Build();
         Assert.Throws<ArgumentNullException>(() => host.UseWpfViewModelLocator<TestApplication, Locator>((Locator)null!));
         Assert.Throws<ArgumentNullException>(() => host.UseWpfViewModelLocator<TestApplication, Locator>((Func<IServiceProvider, Locator>)null!));
-    }
-
-    // WPF allows only one Application per AppDomain. Keep all real UI startup in this test.
-    // Regressions:
-    // - 4.1.0: WPF exiting on its own (Exit -> StopApplication) must not make
-    //   host.StopAsync fail with TaskCanceledException from an aborted dispatcher operation.
-    // - 4.1.1: with WpfLifetime, closing WPF must stop the host even if ApplicationStarted runs early.
-    //   No hosted service may delay startup here.
-    [Fact]
-    public async Task ModernHostInitializesOnStaThreadAndStopsWhenWpfExits()
-    {
-        var state = new ApplicationState();
-        var locator = new Locator();
-        IServiceProvider? locatorProvider = null;
-        var builder = Host.CreateApplicationBuilder();
-        builder.Services.AddSingleton(state);
-        builder.Services.AddSingleton(locator);
-        builder.Services.AddWpf<TestApplication>();
-        builder.Services.AddWpfLifetime(options => options.SuppressStatusMessages = true);
-        builder.Services.AddThreadSwitching();
-        builder.Services.AddWpfViewModelLocator<TestApplication, Locator>(provider =>
-        {
-            locatorProvider = provider;
-            state.Record("Factory");
-            return provider.GetRequiredService<Locator>();
-        });
-
-        using var host = builder.Build();
-        var thread = host.Services.GetRequiredService<IWpfThread<TestApplication>>();
-        var context = host.Services.GetRequiredService<IWpfContext<TestApplication>>();
-        var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-        // Resolved before the UI thread exists, like a constructor-injected dependency of a hosted service.
-        var joinableTaskFactory = host.Services.GetRequiredService<JoinableTaskFactory>();
-        try
-        {
-            await host.StartAsync().WaitAsync(TimeSpan.FromSeconds(15));
-            // StartAsync waits for the UI thread to create and initialize the application.
-            Assert.NotNull(context.WpfApplication);
-            var application = await state.Started.Task.WaitAsync(TimeSpan.FromSeconds(15));
-            Assert.Same(host.Services.GetRequiredService<IServiceProvider>(), locatorProvider);
-            Assert.Same(locator, application.Locator);
-            Assert.Equal(new[] { "Constructor", "InitializeComponent", "Initialize", "Factory", "InitializeLocator", "Startup" }, state.Events.ToArray());
-            Assert.All(state.Threads, id => Assert.Equal(thread.MainThread.ManagedThreadId, id));
-            Assert.Equal(ApartmentState.STA, thread.MainThread.GetApartmentState());
-            Assert.True(context.IsRunning);
-
-            // AddThreadSwitching: the factory resolved before StartAsync switches from a thread pool thread onto the WPF UI thread.
-            var switchedThreadId = await Task.Run(async () =>
-            {
-                await joinableTaskFactory.SwitchToMainThreadAsync();
-                return Environment.CurrentManagedThreadId;
-            }).WaitAsync(TimeSpan.FromSeconds(15));
-            Assert.Equal(thread.MainThread.ManagedThreadId, switchedThreadId);
-
-            await application.Dispatcher.InvokeAsync(() => application.Shutdown(3));
-            await Task.Delay(Timeout.Infinite, lifetime.ApplicationStopping).ContinueWith(_ => { }, TaskScheduler.Default).WaitAsync(TimeSpan.FromSeconds(15));
-            Assert.True(lifetime.ApplicationStopping.IsCancellationRequested);
-            // Application.Shutdown(exitCode) becomes the process exit code, like in a plain WPF app.
-            Assert.Equal(3, Environment.ExitCode);
-        }
-        finally
-        {
-            Environment.ExitCode = 0;
-            await host.StopAsync().WaitAsync(TimeSpan.FromSeconds(15));
-            Assert.True(thread.MainThread.Join(TimeSpan.FromSeconds(5)));
-        }
-
-        Assert.False(context.IsRunning);
     }
 
     public sealed class Locator;

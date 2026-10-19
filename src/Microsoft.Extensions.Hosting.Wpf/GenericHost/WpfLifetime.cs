@@ -115,7 +115,7 @@ public class WpfLifetime : IHostLifetime, IDisposable
         }
     }
 
-    private void OnProcessExit(object? sender, EventArgs e)
+    internal void OnProcessExit(object? sender, EventArgs e)
     {
         ApplicationLifetime.StopApplication();
         if (!_shutdownBlock.WaitOne(HostOptions.ShutdownTimeout))

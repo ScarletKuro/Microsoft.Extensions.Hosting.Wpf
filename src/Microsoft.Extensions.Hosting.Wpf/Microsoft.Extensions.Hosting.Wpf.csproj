@@ -68,4 +68,8 @@
       <IncludeAssets>build; analyzers</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Hosting.Wpf.Tests" Key="$(AssemblySignPublicKey)" />
+  </ItemGroup>
 </Project>
