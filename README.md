@@ -145,7 +145,7 @@ For the full guide including **ViewModel Locator**, **constructor injection**, a
 
 ## Samples
 1. [HostingMinimal](samples/HostingMinimal): Top-level statements with `Host.CreateApplicationBuilder` and a code-only WPF application.
-2. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingSimple): An explicit `Main` using `Host.CreateApplicationBuilder`, XAML, and a view model locator.
+2. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingSimple): Top-level statements with `App.xaml` (`EnableDefaultApplicationDefinition` set to `false` instead of `StartupObject`), XAML, and a view model locator.
 3. [HostingReactiveUI](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUI): An advanced example using **NLog** for logging, **ReactiveUI** as the MVVM framework, and the **TrayIcon** feature.
 4. [HostingReactiveUISimpleInjector](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjector): Incorporates **SimpleInjector** alongside **ReactiveUI**. Demonstrates that you're not limited to `Microsoft.DependencyInjection`.
 5. [HostingReactiveUISimpleInjectorAmbientScope](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjectorAmbientScope): Demonstrates `AsyncScopedLifestyle` with **SimpleInjector** for [ambient-scoping](https://blogs.cuttingedge.it/steven/posts/2019/ambient-composition-model/) and integrates **Threading**.
