@@ -137,9 +137,7 @@ Alternatively, stop WPF from generating that `Main`. No `StartupObject` is neede
 ```
 
 `App.xaml` is then compiled like any other XAML file: `InitializeComponent()` (with `StartupUri`
-and the application resources) is still generated, only `Main` is not. Design-time tools that find
-application resources through the application definition, such as the Visual Studio XAML designer,
-may no longer resolve resources from `App.xaml`; the running application is not affected.
+and the application resources) is still generated, only `Main` is not.
 
 For the full guide including **ViewModel Locator**, **constructor injection**, and more, see the **[Wiki](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/wiki)**.
 
