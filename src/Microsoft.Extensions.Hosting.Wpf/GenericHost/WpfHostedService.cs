@@ -12,8 +12,9 @@ namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
 /// <summary>
 /// Starts WPF in <see cref="StartedAsync"/>, i.e. only after every hosted service has started successfully (like ASP.NET Core
-/// starts serving requests): if any hosted service fails to start, WPF is never created. Stops WPF in <see cref="StopAsync"/>
-/// and waits for the UI thread to end, so application cleanup runs before the host disposes its services.
+/// starts serving requests): if any hosted service fails to start, WPF is never created. Stops WPF in <see cref="StoppingAsync"/>,
+/// i.e. before any hosted service's StopAsync (started last, stopped first), and waits for the UI thread to end, so application
+/// cleanup runs while the other hosted services and all registered services still work.
 /// </summary>
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by dependency injection (AddHostedService).")]
 internal sealed class WpfHostedService<TApplication>
@@ -63,7 +64,7 @@ internal sealed class WpfHostedService<TApplication>
         }
         catch
         {
-            // Startup failed or was cancelled: the host will be disposed without calling StopAsync. End the UI thread now,
+            // Startup failed or was cancelled: the host will be disposed without stopping its services. End the UI thread now,
             // while the host's services still work.
             _wpfThread.StopAndWait();
             throw;
@@ -81,7 +82,7 @@ internal sealed class WpfHostedService<TApplication>
     }
 
     /// <inheritdoc />
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public async Task StoppingAsync(CancellationToken cancellationToken)
     {
         if (_wpfContext is { IsRunning: true, WpfApplication: not null })
         {
@@ -111,19 +112,19 @@ internal sealed class WpfHostedService<TApplication>
         }
 
         // Shutdown() only queues the shutdown. Wait until the UI thread has ended, i.e. Exit handlers ran and the components were
-        // disposed, so they can still use their dependencies: the host disposes services right after StopAsync.
+        // disposed, while the other hosted services still run and no service has been disposed yet.
         try
         {
             await WaitAsync(_wpfThread.Completed, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // The host's shutdown timeout elapsed; disposing the host still waits for the UI thread (WpfThread.Dispose).
+            // The host's shutdown timeout elapsed; disposing the host still stops and waits for the UI thread (WpfThread.Dispose).
         }
     }
 
     /// <inheritdoc />
-    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc />
     public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;

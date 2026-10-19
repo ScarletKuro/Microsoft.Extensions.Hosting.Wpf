@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.VisualStudio.Threading;
 
@@ -18,14 +19,14 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddThreadSwitching<TApplication>(this IServiceCollection services)
         where TApplication : Application, IApplicationInitializeComponent
     {
-        services.AddSingleton<JoinableTaskContext>(provider =>
+        services.TryAddSingleton<JoinableTaskContext>(provider =>
         {
             var wpfThread = provider.GetRequiredService<IWpfThread<TApplication>>();
 
             //MainThread exists before the UI thread starts; the synchronization context is resolved when first used.
             return new JoinableTaskContext(wpfThread.MainThread, new WpfThreadSynchronizationContext(wpfThread));
         });
-        services.AddSingleton<JoinableTaskFactory>();
+        services.TryAddSingleton<JoinableTaskFactory>();
 
         return services;
     }
@@ -37,14 +38,14 @@ public static class ServiceCollectionExtensions
     /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
     public static IServiceCollection AddThreadSwitching(this IServiceCollection services)
     {
-        services.AddSingleton<JoinableTaskContext>(provider =>
+        services.TryAddSingleton<JoinableTaskContext>(provider =>
         {
             var wpfThread = provider.GetRequiredService<IWpfThread>();
 
             //MainThread exists before the UI thread starts; the synchronization context is resolved when first used.
             return new JoinableTaskContext(wpfThread.MainThread, new WpfThreadSynchronizationContext(wpfThread));
         });
-        services.AddSingleton<JoinableTaskFactory>();
+        services.TryAddSingleton<JoinableTaskFactory>();
         return services;
     }
 }

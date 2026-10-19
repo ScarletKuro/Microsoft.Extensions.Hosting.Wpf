@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 
@@ -21,8 +22,12 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 internal sealed class WpfThread<TApplication>
     : IWpfThread<TApplication>, IDisposable where TApplication : Application, IApplicationInitializeComponent
 {
-    // How long stopping the application early waits for the UI thread to end.
-    private const int StopTimeoutMilliseconds = 10_000;
+    // Used if HostOptions are not registered; matches the HostOptions.ShutdownTimeout default.
+    private const int DefaultStopTimeoutSeconds = 30;
+
+    // How long stopping the application early waits for the UI thread to end: the host's shutdown timeout. Read once, when the
+    // thread is created, because the service provider may already be disposing when it is needed.
+    private readonly TimeSpan _stopTimeout;
 
     private readonly IServiceProvider _serviceProvider;
     // Guards _disposed, _stopRequested and IsRunning together, so a stopped thread can never start Application.Run().
@@ -66,6 +71,7 @@ internal sealed class WpfThread<TApplication>
     public WpfThread(IServiceProvider serviceProvider, WpfContext<TApplication> wpfContext)
     {
         _serviceProvider = serviceProvider;
+        _stopTimeout = serviceProvider.GetService<IOptions<HostOptions>>()?.Value.ShutdownTimeout ?? TimeSpan.FromSeconds(DefaultStopTimeoutSeconds);
         _wpfContext = wpfContext;
         //Create a thread which runs the UI
         MainThread = new Thread(InternalUiThreadStart)
@@ -105,7 +111,7 @@ internal sealed class WpfThread<TApplication>
     }
 
     /// <summary>
-    /// Stops the application without the host's usual StopAsync (host startup failed or was cancelled, or the host is being
+    /// Stops the application without the host's usual stop (host startup failed or was cancelled, or the host is being
     /// disposed), or prevents it from running if it is still initializing, and waits for the UI thread to end.
     /// </summary>
     internal void StopAndWait()
@@ -133,13 +139,13 @@ internal sealed class WpfThread<TApplication>
 
         if (MainThread.IsAlive && Thread.CurrentThread != MainThread)
         {
-            MainThread.Join(StopTimeoutMilliseconds);
+            MainThread.Join(_stopTimeout);
         }
     }
 
     /// <summary>
     /// Called by the DI container when the host (its service provider) is disposed; explicit so only the container calls it.
-    /// Normally the UI thread has already ended: StopAsync waits for it, and <see cref="WpfStartupGuard{TApplication}"/> stops it
+    /// Normally the UI thread has already ended: StoppingAsync waits for it, and <see cref="WpfStartupGuard{TApplication}"/> stops it
     /// if the host never finished starting. This is the last resort: no UI thread may outlive the host.
     /// </summary>
     void IDisposable.Dispose()
@@ -214,7 +220,7 @@ internal sealed class WpfThread<TApplication>
         }
         finally
         {
-            // WPF has exited (on its own or via StopAsync), the dispatcher is shut down.
+            // WPF has exited (on its own or via StoppingAsync), the dispatcher is shut down.
             _wpfContext.IsRunning = false;
         }
 #pragma warning restore CA1031

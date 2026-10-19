@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 internal sealed class WpfContext<TApplication>
     : IWpfContext<TApplication> where TApplication : Application
 {
-    // Written on the UI thread and read from host threads (StopAsync, HandleApplicationExit callers).
+    // Written on the UI thread and read from host threads (StoppingAsync, HandleApplicationExit callers).
     private volatile bool _isRunning;
 
     /// <summary>

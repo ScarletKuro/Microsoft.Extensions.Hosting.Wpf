@@ -106,7 +106,7 @@ public static class ServiceCollectionExtensions
     {
         ThrowHelper.ThrowIfNull(services);
 
-        return services.AddWpfPreContextInitialization<TApplication>((_, context) => context.WpfApplication?.Initialize());
+        return services.AddWpfPreContextInitialization(WpfInitializationActions.Initialize<TApplication>());
     }
 
     /// <summary>
@@ -143,12 +143,7 @@ public static class ServiceCollectionExtensions
         ThrowHelper.ThrowIfNull(services);
         ThrowHelper.ThrowIfNull(viewModelLocatorFunc);
 
-        return services.AddWpfPreContextInitialization<TApplication>((provider, context) =>
-        {
-            context.WpfApplication?.Initialize();
-            var viewModelLocator = viewModelLocatorFunc(provider);
-            context.WpfApplication?.InitializeLocator(viewModelLocator);
-        });
+        return services.AddWpfPreContextInitialization(WpfInitializationActions.ViewModelLocator<TApplication, TViewModelLocator>(viewModelLocatorFunc));
     }
 
     private static IServiceCollection AddWpfPreContextInitialization<TApplication>(this IServiceCollection services, Action<IServiceProvider, IWpfContext<TApplication>> initialize)

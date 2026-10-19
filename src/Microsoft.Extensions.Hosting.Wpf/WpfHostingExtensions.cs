@@ -94,71 +94,66 @@ public static class WpfHostingExtensions
         return hostBuilder.ConfigureServices((_, collection) => collection.AddWpfViewModelLocator<TApplication, TViewModelLocator>(viewModelLocatorFunc));
     }
 
+
     /// <summary>
-    /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{TViewModelLocator}"/>
+    /// Calls <see cref="IApplicationInitialize.Initialize"/> on the WPF UI thread after InitializeComponent and before Run.
+    /// Post-build alternative to <c>services.AddWpfInitialization&lt;TApplication&gt;()</c>, for setups that must configure it
+    /// after <c>Build()</c> (e.g. bootstrapping a third-party container from the built host). Call it before the host starts.
     /// </summary>
     /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
-    /// <param name="host">The <see cref="IHostBuilder" /> to configure.</param>
-    /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+    /// <param name="host">The built <see cref="IHost" />.</param>
+    /// <returns>The same instance of the <see cref="IHost"/> for chaining.</returns>
     public static IHost UseWpfInitialization<TApplication>(this IHost host)
         where TApplication : Application, IApplicationInitializeComponent, IApplicationInitialize
     {
         ThrowHelper.ThrowIfNull(host);
 
-        WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
-        wpfThread.SetPreContextInitialization(context =>
-        {
-            context.WpfApplication?.Initialize();
-        });
-
-        return host;
+        return host.UsePreContextInitialization(WpfInitializationActions.Initialize<TApplication>());
     }
 
     /// <summary>
-    /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{TViewModelLocator}"/>
+    /// Calls <see cref="IApplicationInitialize.Initialize"/> and <see cref="IViewModelLocatorInitialization{TViewModelLocator}.InitializeLocator"/>
+    /// with <paramref name="viewModelLocator"/> on the WPF UI thread before Run. Post-build alternative to
+    /// <c>services.AddWpfViewModelLocator</c>. Call it before the host starts.
     /// </summary>
     /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
     /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
-    /// <param name="host">The <see cref="IHostBuilder" /> to configure.</param>
-    /// <param name="viewModelLocator">Instance of <see cref="TViewModelLocator"/></param>
-    /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+    /// <param name="host">The built <see cref="IHost" />.</param>
+    /// <param name="viewModelLocator">Instance of <typeparamref name="TViewModelLocator"/></param>
+    /// <returns>The same instance of the <see cref="IHost"/> for chaining.</returns>
     public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost host, TViewModelLocator viewModelLocator)
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
         ThrowHelper.ThrowIfNull(host);
         ThrowHelper.ThrowIfNull(viewModelLocator);
 
-        WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
-        wpfThread.SetPreContextInitialization(context=>
-        {
-            context.WpfApplication?.Initialize();
-            context.WpfApplication?.InitializeLocator(viewModelLocator);
-        });
-
-        return host;
+        return host.UsePreContextInitialization(WpfInitializationActions.ViewModelLocator<TApplication, TViewModelLocator>(_ => viewModelLocator));
     }
 
     /// <summary>
-    /// Adds feature to use ViewModelLocator and calls <see cref="IViewModelLocatorInitialization{TViewModelLocator}"/>
+    /// Calls <see cref="IApplicationInitialize.Initialize"/> and <see cref="IViewModelLocatorInitialization{TViewModelLocator}.InitializeLocator"/>
+    /// on the WPF UI thread before Run; the locator is created there by <paramref name="viewModelLocatorFunc"/> with the host's
+    /// service provider. Post-build alternative to <c>services.AddWpfViewModelLocator</c>. Call it before the host starts.
     /// </summary>
     /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
     /// <typeparam name="TViewModelLocator">The View Model Locator</typeparam>
-    /// <param name="host">The <see cref="IHostBuilder" /> to configure.</param>
-    /// <param name="viewModelLocatorFunc">Function for creating <see cref="TViewModelLocator"/></param>
-    /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+    /// <param name="host">The built <see cref="IHost" />.</param>
+    /// <param name="viewModelLocatorFunc">Function for creating <typeparamref name="TViewModelLocator"/></param>
+    /// <returns>The same instance of the <see cref="IHost"/> for chaining.</returns>
     public static IHost UseWpfViewModelLocator<TApplication, TViewModelLocator>(this IHost host, Func<IServiceProvider, TViewModelLocator> viewModelLocatorFunc)
         where TApplication : Application, IApplicationInitializeComponent, IViewModelLocatorInitialization<TViewModelLocator>
     {
         ThrowHelper.ThrowIfNull(host);
         ThrowHelper.ThrowIfNull(viewModelLocatorFunc);
 
-        WpfThread<TApplication> wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
-        wpfThread.SetPreContextInitialization(context =>
-        {
-            context.WpfApplication?.Initialize();
-            var viewModelLocator = viewModelLocatorFunc(host.Services);
-            context.WpfApplication?.InitializeLocator(viewModelLocator);
-        });
+        return host.UsePreContextInitialization(WpfInitializationActions.ViewModelLocator<TApplication, TViewModelLocator>(viewModelLocatorFunc));
+    }
+
+    private static IHost UsePreContextInitialization<TApplication>(this IHost host, Action<IServiceProvider, IWpfContext<TApplication>> initialize)
+        where TApplication : Application, IApplicationInitializeComponent
+    {
+        var wpfThread = host.Services.GetRequiredService<WpfThread<TApplication>>();
+        wpfThread.SetPreContextInitialization(context => initialize(host.Services, context));
 
         return host;
     }

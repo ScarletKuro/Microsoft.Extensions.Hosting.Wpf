@@ -119,6 +119,11 @@ public class ScenarioTests
         // for WPF to exit completely before the host started disposing.
         result.AssertNoInfo("LateResourceUsedAfterDispose");
         result.Assert(result.IndexOf("Exit") < result.IndexOf("LateResourceDisposed"), "OnExit ran after the host disposed a service resolved after startup.");
+
+        // WPF started last, so it stops first: before the StopAsync of hosted services registered after AddWpf (ScenarioDriver),
+        // so application cleanup can still use them.
+        result.Assert(result.IndexOf("Exit") < result.IndexOf("DriverStopped"), "OnExit ran after a hosted service registered after AddWpf was stopped.");
+        result.Assert(result.IndexOf("TrayDispose") < result.IndexOf("DriverStopped"), "Components were disposed after a hosted service registered after AddWpf was stopped.");
     }
 
     // OnExit and component disposal use ScenarioResource, an application-owned disposable singleton.

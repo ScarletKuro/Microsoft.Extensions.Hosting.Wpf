@@ -40,13 +40,18 @@ public sealed class ScenarioDriver : IHostedService
         return Task.CompletedTask;
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    // Registered after AddWpf: the host calls this after WPF's StoppingAsync, so WPF must have exited already.
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        _log.Event("DriverStopped");
+        return Task.CompletedTask;
+    }
 
     private async Task StopScenarioAsync()
     {
         try
         {
-            // WpfHostedService.StartAsync waits for the application, so it must exist once the host has started.
+            // WpfHostedService.StartedAsync waits for the application, so it must exist once the host has started.
             var application = _context.WpfApplication;
             if (application is null)
             {

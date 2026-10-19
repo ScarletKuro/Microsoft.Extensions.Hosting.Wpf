@@ -86,6 +86,17 @@ serving requests. If any hosted service fails to start, WPF is never created. An
 that needs the UI (the dispatcher, `JoinableTaskFactory.SwitchToMainThreadAsync`, ...) should use it
 from `IHostApplicationLifetime.ApplicationStarted`, not from its own `StartAsync`.
 
+Started last, WPF is also stopped first: before any hosted service's `StopAsync`, the host waits until
+WPF has fully exited (`OnExit`, tray icon disposal), up to `HostOptions.ShutdownTimeout`. Application
+cleanup can therefore still use other hosted services and every registered service.
+
+Known limitations:
+- Waiting for WPF is bounded by `HostOptions.ShutdownTimeout`. Application code that blocks longer (in
+  initialization or cleanup) may still run after the host has started disposing services.
+- To know when `OnStartup` has returned, the library identifies the dispatcher operation WPF's
+  `Application` constructor queues for startup. If that ever cannot be identified, startup fails with an
+  `InvalidOperationException` rather than reporting the wrong moment.
+
 `AddWpfLifetime()` is optional. With any host lifetime, `AddWpf` stops the host when the WPF
 application exits. `WpfLifetime` replaces the default `ConsoleLifetime` with one suited to a
 windowed application: no Ctrl+C handling or console shutdown hints, WPF status messages (turn them off

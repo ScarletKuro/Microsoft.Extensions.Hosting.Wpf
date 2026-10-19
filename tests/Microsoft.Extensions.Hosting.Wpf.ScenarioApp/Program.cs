@@ -165,6 +165,8 @@ public static class Program
         if (scenario.Failure == FailureKind.CanceledDuringInitialization)
         {
             // Blocks UI initialization, cancels startup meanwhile, and finishes only after the host has been disposed.
+            // The library waits for the UI thread up to the host's shutdown timeout; keep it short so the scenario stays fast.
+            services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(5));
             services.AddWpfTrayIcon<BlockingInitializationComponent>();
         }
 
