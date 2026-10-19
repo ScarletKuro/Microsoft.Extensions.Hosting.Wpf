@@ -122,6 +122,11 @@ public class ApplicationBuilderTests
         using var host = builder.Build();
 
         Assert.IsType<WpfLifetime>(host.Services.GetRequiredService<IHostLifetime>());
+
+        using var legacyHost = Host.CreateDefaultBuilder().UseWpfLifetime().Build();
+
+        Assert.IsType<WpfLifetime>(legacyHost.Services.GetRequiredService<IHostLifetime>());
+        Assert.False(legacyHost.Services.GetRequiredService<IOptions<WpfLifetimeOptions>>().Value.SuppressStatusMessages);
     }
 
     [Fact]
@@ -308,6 +313,8 @@ public class ApplicationBuilderTests
         Assert.Throws<ArgumentNullException>(() => missingServices.AddWpfInitialization<TestApplication>());
         Assert.Throws<ArgumentNullException>(() => missingServices.AddWpfViewModelLocator<TestApplication, Locator>(new Locator()));
         Assert.Throws<ArgumentNullException>(() => missingServices.AddWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
+        Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfLifetime());
+        Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfLifetime(_ => { }));
         Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfInitialization<TestApplication>());
         Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfViewModelLocator<TestApplication, Locator>(new Locator()));
         Assert.Throws<ArgumentNullException>(() => missingHostBuilder.UseWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
