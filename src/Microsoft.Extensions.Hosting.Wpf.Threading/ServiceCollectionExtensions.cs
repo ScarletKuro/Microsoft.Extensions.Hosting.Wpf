@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.VisualStudio.Threading;
 
@@ -13,18 +14,19 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
     /// <typeparam name="TApplication">WPF <see cref="Application" /></typeparam>
     /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
-    /// <see cref="AddThreadSwitching(IServiceCollection)"/>
-    /// <note>Should we mark this method as obsolete or keep it? There is no real scenario where we need <see cref="TApplication"/>.</note>
+    /// <remarks>Same as <see cref="AddThreadSwitching(IServiceCollection)"/>, but uses the WPF thread of <typeparamref name="TApplication"/>.
+    /// Since only one WPF application can be registered, both overloads resolve the same thread.</remarks>
     public static IServiceCollection AddThreadSwitching<TApplication>(this IServiceCollection services)
         where TApplication : Application, IApplicationInitializeComponent
     {
-        services.AddSingleton<JoinableTaskContext>(provider =>
+        services.TryAddSingleton<JoinableTaskContext>(provider =>
         {
             var wpfThread = provider.GetRequiredService<IWpfThread<TApplication>>();
 
-            return new JoinableTaskContext(wpfThread.MainThread, wpfThread.SynchronizationContext);
+            //MainThread exists before the UI thread starts; the synchronization context is resolved when first used.
+            return new JoinableTaskContext(wpfThread.MainThread, new WpfThreadSynchronizationContext(wpfThread));
         });
-        services.AddSingleton<JoinableTaskFactory>();
+        services.TryAddSingleton<JoinableTaskFactory>();
 
         return services;
     }
@@ -36,13 +38,14 @@ public static class ServiceCollectionExtensions
     /// <returns>The same instance of the <see cref="IServiceCollection"/> for chaining.</returns>
     public static IServiceCollection AddThreadSwitching(this IServiceCollection services)
     {
-        services.AddSingleton<JoinableTaskContext>(provider =>
+        services.TryAddSingleton<JoinableTaskContext>(provider =>
         {
             var wpfThread = provider.GetRequiredService<IWpfThread>();
 
-            return new JoinableTaskContext(wpfThread.MainThread, wpfThread.SynchronizationContext);
+            //MainThread exists before the UI thread starts; the synchronization context is resolved when first used.
+            return new JoinableTaskContext(wpfThread.MainThread, new WpfThreadSynchronizationContext(wpfThread));
         });
-        services.AddSingleton<JoinableTaskFactory>();
+        services.TryAddSingleton<JoinableTaskFactory>();
         return services;
     }
 }

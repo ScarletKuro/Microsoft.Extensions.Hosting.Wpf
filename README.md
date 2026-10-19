@@ -27,27 +27,98 @@ public partial class App : Application, IApplicationInitializeComponent
 ```
 
 ### 2. Create `Program.cs`
+
+Use `Host.CreateApplicationBuilder` from `Microsoft.Extensions.Hosting` 8.0.1. Everything is
+registered on `builder.Services` before calling `Build()`, so the same calls work with
+`HostApplicationBuilder`, ASP.NET Core's `WebApplicationBuilder` (on every supported .NET version,
+although it implements `IHostApplicationBuilder` only from .NET 8), any other `IHostApplicationBuilder`,
+and inside `IHostBuilder.ConfigureServices`. As with Microsoft's
+[Generic Host](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host),
+the built application is still an `IHost`.
+
 ```csharp
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Wpf;
+
 public class Program
 {
     public static void Main(string[] args)
     {
-        using IHost host = CreateHostBuilder(args).Build();
+        var builder = Host.CreateApplicationBuilder(args);
+        builder.Services.AddWpf<App>();
+        builder.Services.AddWpfLifetime();
+
+        using IHost host = builder.Build();
         host.Run();
-    }
-
-    private static IHostBuilder CreateHostBuilder(string[] args)
-    {
-        return Host.CreateDefaultBuilder(args)
-            .ConfigureServices(ConfigureServices);
-    }
-
-    private static void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services)
-    {
-        services.AddWpf<App>();
     }
 }
 ```
+
+The same setup works with top-level statements in a code-only WPF application
+(see [HostingMinimal](samples/HostingMinimal)). For an application with `App.xaml`,
+use the explicit `Main` above and set `StartupObject` as shown in step 3.
+
+```csharp
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddWpf<App>();
+builder.Services.AddWpfLifetime();
+
+using var host = builder.Build();
+host.Run();
+```
+
+If your application implements `IApplicationInitialize`, add
+`builder.Services.AddWpfInitialization<App>()`. For a view model locator, use this instead:
+
+```csharp
+builder.Services.AddWpfViewModelLocator<App, IViewModelLocator>(
+    provider => new ViewModelLocator(provider));
+```
+
+Application initialization and the locator factory run on the WPF UI thread, after
+`InitializeComponent()` and before `Application.Run()`. The factory receives the built
+host's service provider. Use either initialization extension once per application;
+the locator extension also calls `Initialize()`. If `AddWpf<App>()` is missing, host
+startup fails with an `InvalidOperationException`.
+
+WPF is created and started once every hosted service has started, the way ASP.NET Core starts
+serving requests. If any hosted service fails to start, WPF is never created. Another hosted service
+that needs the UI (the dispatcher, `JoinableTaskFactory.SwitchToMainThreadAsync`, ...) should use it
+from `IHostApplicationLifetime.ApplicationStarted`, not from its own `StartAsync`.
+
+Started last, WPF is also stopped first: before any hosted service's `StopAsync`, the host waits until
+WPF has fully exited (`OnExit`, tray icon disposal), up to `HostOptions.ShutdownTimeout`. Application
+cleanup can therefore still use other hosted services and every registered service.
+
+Known limitations:
+- Waiting for WPF is bounded by `HostOptions.ShutdownTimeout`. Application code that blocks longer (in
+  initialization or cleanup) may still run after the host has started disposing services.
+- To know when `OnStartup` has returned, the library identifies the dispatcher operation WPF's
+  `Application` constructor queues for startup. If that ever cannot be identified, startup fails with an
+  `InvalidOperationException` rather than reporting the wrong moment.
+
+`AddWpfLifetime()` is optional. With any host lifetime, `AddWpf` stops the host when the WPF
+application exits. `WpfLifetime` replaces the default `ConsoleLifetime` with one suited to a
+windowed application: no Ctrl+C handling or console shutdown hints, WPF status messages (turn them off
+with `AddWpfLifetime(options => options.SuppressStatusMessages = true)`), and a graceful host
+shutdown when the process exits.
+
+With `IHostBuilder`, use the same `IServiceCollection` extensions or the `Use*` shortcuts:
+
+```csharp
+using IHost host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices(services => services.AddWpf<App>())
+    .UseWpfLifetime()
+    .UseWpfViewModelLocator<App, IViewModelLocator>(provider => new ViewModelLocator(provider))
+    .Build();
+host.Run();
+```
+
+The post-build `IHost` extensions (`host.UseWpfInitialization<App>()`,
+`host.UseWpfViewModelLocator<App, ...>(...)`) remain available for setups that must run
+after the host is built, for example when a third-party container is bootstrapped from the
+built host. Configure initialization in only one place: combining the pre-build and
+post-build extensions throws.
 
 ### 3. Update `.csproj`
 ```xml
@@ -57,11 +128,12 @@ public class Program
 For the full guide including **ViewModel Locator**, **constructor injection**, and more, see the **[Wiki](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/wiki)**.
 
 ## Samples
-1. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingSimple): A minimalistic, beginner-friendly introduction. Offers a basic starting point for understanding the framework.
-2. [HostingReactiveUI](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUI): An advanced example using **NLog** for logging, **ReactiveUI** as the MVVM framework, and the **TrayIcon** feature.
-3. [HostingReactiveUISimpleInjector](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjector): Incorporates **SimpleInjector** alongside **ReactiveUI**. Demonstrates that you're not limited to `Microsoft.DependencyInjection`.
-4. [HostingReactiveUISimpleInjectorAmbientScope](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjectorAmbientScope): Demonstrates `AsyncScopedLifestyle` with **SimpleInjector** for [ambient-scoping](https://blogs.cuttingedge.it/steven/posts/2019/ambient-composition-model/) and integrates **Threading**.
-5. [HostingReactiveUISimpleInjectorFlowingScope](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjectorFlowingScope): Demonstrates `ScopedLifestyle.Flowing` with **SimpleInjector** for [closure-scoping](https://blogs.cuttingedge.it/steven/posts/2019/closure-composition-model/). Presents an alternative approach without `ViewModelLocatorHost`.
+1. [HostingMinimal](samples/HostingMinimal): Top-level statements with `Host.CreateApplicationBuilder` and a code-only WPF application.
+2. [HostingSimple](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingSimple): An explicit `Main` using `Host.CreateApplicationBuilder`, XAML, and a view model locator.
+3. [HostingReactiveUI](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUI): An advanced example using **NLog** for logging, **ReactiveUI** as the MVVM framework, and the **TrayIcon** feature.
+4. [HostingReactiveUISimpleInjector](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjector): Incorporates **SimpleInjector** alongside **ReactiveUI**. Demonstrates that you're not limited to `Microsoft.DependencyInjection`.
+5. [HostingReactiveUISimpleInjectorAmbientScope](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjectorAmbientScope): Demonstrates `AsyncScopedLifestyle` with **SimpleInjector** for [ambient-scoping](https://blogs.cuttingedge.it/steven/posts/2019/ambient-composition-model/) and integrates **Threading**.
+6. [HostingReactiveUISimpleInjectorFlowingScope](https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/tree/main/samples/HostingReactiveUISimpleInjectorFlowingScope): Demonstrates `ScopedLifestyle.Flowing` with **SimpleInjector** for [closure-scoping](https://blogs.cuttingedge.it/steven/posts/2019/closure-composition-model/). Presents an alternative approach without `ViewModelLocatorHost`.
 
 ## Documentation
 

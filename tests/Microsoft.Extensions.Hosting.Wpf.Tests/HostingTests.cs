@@ -1,39 +1,24 @@
-using System.Collections.Concurrent;
-using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Wpf.Core;
-using Microsoft.Extensions.Hosting.Wpf.GenericHost;
-using Microsoft.Extensions.Hosting.Wpf.Locator;
-using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Tests;
 
+// Post-build IHost extensions. The real UI startup lives in ApplicationBuilderTests:
+// WPF allows only one Application per AppDomain.
 public class HostingTests
 {
-    [Fact]
-    public void LifetimeIsRegisteredWithOptions()
-    {
-        using var host = Host.CreateDefaultBuilder()
-            .ConfigureServices(services => services.AddWpf<TestApplication>())
-            .UseWpfLifetime(options => options.SuppressStatusMessages = true)
-            .Build();
-
-        Assert.IsType<WpfLifetime>(host.Services.GetRequiredService<IHostLifetime>());
-        Assert.True(host.Services.GetRequiredService<IOptions<WpfLifeTimeOptions>>().Value.SuppressStatusMessages);
-    }
-
     [Fact]
     public void DuplicateAndMixedInitializationAreRejected()
     {
         using var host = Host.CreateDefaultBuilder()
-            .ConfigureServices(services => services.AddWpf<TestApplication>())
+            .ConfigureServices(services => services.AddWpf<ApplicationBuilderTests.TestApplication>())
             .Build()
-            .UseWpfInitialization<TestApplication>();
+            .UseWpfInitialization<ApplicationBuilderTests.TestApplication>();
 
-        Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<TestApplication>());
-        Assert.Throws<InvalidOperationException>(() => host.UseWpfViewModelLocator<TestApplication, Locator>(new Locator()));
-        Assert.Throws<InvalidOperationException>(() => host.UseWpfViewModelLocator<TestApplication, Locator>(_ => new Locator()));
+        Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<ApplicationBuilderTests.TestApplication>());
+        Assert.Throws<InvalidOperationException>(() => host.UseWpfViewModelLocator<ApplicationBuilderTests.TestApplication, ApplicationBuilderTests.Locator>(new ApplicationBuilderTests.Locator()));
+        Assert.Throws<InvalidOperationException>(() => host.UseWpfViewModelLocator<ApplicationBuilderTests.TestApplication, ApplicationBuilderTests.Locator>(_ => new ApplicationBuilderTests.Locator()));
     }
 
     [Fact]
@@ -41,7 +26,20 @@ public class HostingTests
     {
         using var host = Host.CreateDefaultBuilder().Build();
 
-        Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<TestApplication>());
+        Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<ApplicationBuilderTests.TestApplication>());
+    }
+
+    [Fact]
+    public async Task InitializationAfterStartIsRejected()
+    {
+        // The failing factory starts the UI thread without creating a WPF Application (one per AppDomain).
+        using var host = Host.CreateDefaultBuilder()
+            .ConfigureServices(services => services.AddWpf<ApplicationBuilderTests.TestApplication>(_ => throw new InvalidOperationException("Not created.")))
+            .Build();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync().WaitAsync(TimeSpan.FromSeconds(15)));
+
+        var exception = Assert.Throws<InvalidOperationException>(() => host.UseWpfInitialization<ApplicationBuilderTests.TestApplication>());
+        Assert.Contains("before the host is started", exception.Message);
     }
 
     [Fact]
@@ -49,113 +47,15 @@ public class HostingTests
     {
         var failure = new InvalidOperationException("Application failed to start.");
         using var host = Host.CreateDefaultBuilder()
-            .ConfigureServices(services => services.AddWpf<TestApplication>(_ => throw failure))
+            .ConfigureServices(services => services.AddWpf<ApplicationBuilderTests.TestApplication>(_ => throw failure))
             .UseWpfLifetime(options => options.SuppressStatusMessages = true)
             .Build();
-        var thread = host.Services.GetRequiredService<IWpfThread<TestApplication>>();
+        var thread = host.Services.GetRequiredService<IWpfThread<ApplicationBuilderTests.TestApplication>>();
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync().WaitAsync(TimeSpan.FromSeconds(15)));
 
         Assert.Same(failure, exception);
         Assert.True(thread.MainThread.Join(TimeSpan.FromSeconds(5)));
-        Assert.False(host.Services.GetRequiredService<IWpfContext<TestApplication>>().IsRunning);
-    }
-
-    // WPF allows only one Application per AppDomain. Keep all real UI startup in this test.
-    // Regressions:
-    // - 4.1.0: WPF shutting down on its own (Exit -> StopApplication) raced with WpfHostedService.StopAsync,
-    //   which then awaited an aborted dispatcher operation and failed with TaskCanceledException.
-    // - 4.1.1: with WpfLifetime, Application.Exit was hooked in ApplicationStarted, which could run before the
-    //   application existed, so closing WPF never stopped the host. No hosted service may delay startup here.
-    [Fact]
-    public async Task HostInitializesOnStaThreadAndStopsCleanlyWhenWpfExits()
-    {
-        var state = new ApplicationState();
-        var locator = new Locator();
-        using var host = Host.CreateDefaultBuilder()
-            .ConfigureServices(services =>
-            {
-                services.AddSingleton(state);
-                services.AddWpf<TestApplication>();
-            })
-            .UseWpfLifetime(options => options.SuppressStatusMessages = true)
-            .Build()
-            .UseWpfViewModelLocator<TestApplication, Locator>(_ =>
-            {
-                state.Record("Factory");
-                return locator;
-            });
-
-        var thread = host.Services.GetRequiredService<IWpfThread<TestApplication>>();
-        var context = host.Services.GetRequiredService<IWpfContext<TestApplication>>();
-        var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-        try
-        {
-            await host.StartAsync().WaitAsync(TimeSpan.FromSeconds(15));
-            // StartAsync waits for the UI thread to create and initialize the application.
-            Assert.NotNull(context.WpfApplication);
-            var application = await state.Started.Task.WaitAsync(TimeSpan.FromSeconds(15));
-            Assert.Same(locator, application.Locator);
-            Assert.Equal(new[] { "Constructor", "InitializeComponent", "Initialize", "Factory", "InitializeLocator", "Startup" }, state.Events.ToArray());
-            Assert.All(state.Threads, id => Assert.Equal(thread.MainThread.ManagedThreadId, id));
-            Assert.Equal(ApartmentState.STA, thread.MainThread.GetApartmentState());
-            Assert.True(context.IsRunning);
-
-            await application.Dispatcher.InvokeAsync(() => application.Shutdown());
-            await Task.Delay(Timeout.Infinite, lifetime.ApplicationStopping).ContinueWith(_ => { }, TaskScheduler.Default).WaitAsync(TimeSpan.FromSeconds(15));
-            Assert.True(lifetime.ApplicationStopping.IsCancellationRequested);
-        }
-        finally
-        {
-            await host.StopAsync().WaitAsync(TimeSpan.FromSeconds(15));
-            Assert.True(thread.MainThread.Join(TimeSpan.FromSeconds(5)));
-        }
-
-        Assert.False(context.IsRunning);
-    }
-
-    public sealed class Locator;
-
-    public sealed class ApplicationState
-    {
-        public ConcurrentQueue<string> Events { get; } = new();
-        public ConcurrentQueue<int> Threads { get; } = new();
-        public TaskCompletionSource<TestApplication> Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public void Record(string name)
-        {
-            Events.Enqueue(name);
-            Threads.Enqueue(Environment.CurrentManagedThreadId);
-        }
-    }
-
-    public sealed class TestApplication : Application, IApplicationInitializeComponent, IApplicationInitialize, IViewModelLocatorInitialization<Locator>
-    {
-        private readonly ApplicationState _state;
-
-        public TestApplication(ApplicationState state)
-        {
-            _state = state;
-            _state.Record("Constructor");
-            ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        }
-
-        public Locator? Locator { get; private set; }
-
-        public void InitializeComponent() => _state.Record("InitializeComponent");
-        public void Initialize() => _state.Record("Initialize");
-
-        public void InitializeLocator(Locator viewModelLocator)
-        {
-            _state.Record("InitializeLocator");
-            Locator = viewModelLocator;
-        }
-
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            base.OnStartup(e);
-            _state.Record("Startup");
-            _state.Started.SetResult(this);
-        }
+        Assert.False(host.Services.GetRequiredService<IWpfContext<ApplicationBuilderTests.TestApplication>>().IsRunning);
     }
 }

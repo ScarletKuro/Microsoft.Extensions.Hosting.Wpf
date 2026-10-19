@@ -15,6 +15,11 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddWpfTrayIcon<TTrayIcon>(this IServiceCollection services)
         where TTrayIcon : class, ITrayIcon
     {
+        if (services is null)
+        {
+            throw new ArgumentNullException(nameof(services));
+        }
+
         //Currently we can't use directly services.AddSingleton<IWpfComponent, TTrayIcon>() / services.AddTransient<IWpfComponent, TTrayIcon>()
         //Since no matter what lifetime you use, if you let the container to create the type by itself without Func then if IDisposable is implemented it will be auto disposed once the container is disposed https://github.com/dotnet/runtime/issues/36491
         //We do not want this, since:
@@ -40,6 +45,16 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddWpfTrayIcon<TTrayIcon>(this IServiceCollection services, Func<IServiceProvider, TTrayIcon> createTray)
         where TTrayIcon : class, ITrayIcon
     {
+        if (services is null)
+        {
+            throw new ArgumentNullException(nameof(services));
+        }
+
+        if (createTray is null)
+        {
+            throw new ArgumentNullException(nameof(createTray));
+        }
+
         services.AddSingleton<Func<IWpfComponent>>(provider =>
         {
             //Rare case when someone needs to resolve ITrayIcon implementation manually, or maybe not from the IServiceProvider but another container.

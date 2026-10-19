@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
-using Microsoft.Extensions.Hosting.Wpf.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Wpf.GenericHost;
 
+/// <summary>
+/// <see cref="IHostLifetime"/> for a windowed WPF application, used instead of the default ConsoleLifetime: it does not handle
+/// Ctrl+C or print console shutdown hints, logs WPF status messages (see <see cref="WpfLifetimeOptions"/>), and waits for the host
+/// to shut down gracefully when the process exits. Stopping the host when WPF exits does not depend on it.
+/// </summary>
 public class WpfLifetime : IHostLifetime, IDisposable
 {
 #pragma warning disable CA2213
@@ -18,9 +21,7 @@ public class WpfLifetime : IHostLifetime, IDisposable
     private CancellationTokenRegistration _applicationStoppingRegistration;
     private CancellationTokenRegistration _applicationStoppedRegistration;
 
-    private IWpfContext WpfContext { get; }
-
-    private WpfLifeTimeOptions Options { get; }
+    private WpfLifetimeOptions Options { get; }
 
     private IHostEnvironment Environment { get; }
 
@@ -31,33 +32,29 @@ public class WpfLifetime : IHostLifetime, IDisposable
     private ILogger Logger { get; }
 
     public WpfLifetime(
-        IWpfContext wpfContext,
-        IOptions<WpfLifeTimeOptions> options,
+        IOptions<WpfLifetimeOptions> options,
         IHostEnvironment environment,
         IHostApplicationLifetime applicationLifetime,
         IOptions<HostOptions> hostOptions)
-        : this(wpfContext, options, environment, applicationLifetime, hostOptions, NullLoggerFactory.Instance)
+        : this(options, environment, applicationLifetime, hostOptions, NullLoggerFactory.Instance)
     {
     }
 
     public WpfLifetime(
-        IWpfContext wpfContext,
-        IOptions<WpfLifeTimeOptions> options,
+        IOptions<WpfLifetimeOptions> options,
         IHostEnvironment environment,
         IHostApplicationLifetime applicationLifetime,
         IOptions<HostOptions> hostOptions,
         ILoggerFactory loggerFactory)
     {
-        ThrowHelper.ThrowIfNull(wpfContext, nameof(wpfContext));
-        ThrowHelper.ThrowIfNull(options, nameof(options));
+        ThrowHelper.ThrowIfNull(options);
         ThrowHelper.ThrowIfNull(options.Value, nameof(options));
         ThrowHelper.ThrowIfNull(applicationLifetime);
         ThrowHelper.ThrowIfNull(environment);
-        ThrowHelper.ThrowIfNull(hostOptions, nameof(hostOptions));
+        ThrowHelper.ThrowIfNull(hostOptions);
         ThrowHelper.ThrowIfNull(hostOptions.Value, nameof(hostOptions));
         ThrowHelper.ThrowIfNull(loggerFactory);
 
-        WpfContext = wpfContext;
         Options = options.Value;
         Environment = environment;
         ApplicationLifetime = applicationLifetime;
@@ -67,9 +64,6 @@ public class WpfLifetime : IHostLifetime, IDisposable
 
     public Task WaitForStartAsync(CancellationToken cancellationToken)
     {
-        //Indicate that we are using our custom lifetime
-        WpfContext.IsLifetimeLinked = true;
-
         _applicationStartedRegistration = ApplicationLifetime
             .ApplicationStarted
             .Register(state => ((WpfLifetime)state!).OnApplicationStarted(), this);
@@ -132,9 +126,8 @@ public class WpfLifetime : IHostLifetime, IDisposable
         // wait one more time after the above log message, but only for ShutdownTimeout, so it doesn't hang forever
         _shutdownBlock.WaitOne(HostOptions.ShutdownTimeout);
 
-        // On Linux if the shutdown is triggered by SIGTERM then that's signaled with the 143 exit code.
-        // Suppress that since we shut down gracefully. https://github.com/aspnet/AspNetCore/issues/6526
-        System.Environment.ExitCode = 0;
+        // Unlike ConsoleLifetime, do not reset Environment.ExitCode: there is no SIGTERM (143) to suppress for WPF,
+        // and it would discard the exit code passed to Application.Shutdown(exitCode).
     }
 
     public void Dispose()

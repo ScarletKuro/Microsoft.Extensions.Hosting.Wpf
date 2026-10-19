@@ -2,5 +2,5 @@
 
 public interface IWpfComponent
 {
-    public void InitializeComponent();
+    void InitializeComponent();
 }

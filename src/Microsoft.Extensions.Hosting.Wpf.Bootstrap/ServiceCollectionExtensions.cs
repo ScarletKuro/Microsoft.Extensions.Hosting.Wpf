@@ -1,11 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Bootstrap;
 
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds <see cref="IBootstrap{TContainer}"/> to <see cref="IServiceCollection"/> for <see cref="WpfHostingExtensions.UseWpfContainerBootstrap{TContainer}"/>.
+    /// Adds <see cref="IBootstrap{TContainer}"/> to <see cref="IServiceCollection"/> for <see cref="WpfBootstrapHostingExtensions.UseWpfContainerBootstrap{TContainer}"/>.
     /// </summary>
     /// <typeparam name="TContainer">The Dependency Injection container.</typeparam>
     /// <typeparam name="TBootstrap"><see cref="IBootstrap{TContainer}"/> bootstrap type.</typeparam>
@@ -15,6 +16,11 @@ public static class ServiceCollectionExtensions
         where TContainer : class
         where TBootstrap : class, IBootstrap<TContainer>
     {
+        if (services is null)
+        {
+            throw new ArgumentNullException(nameof(services));
+        }
+
         services.AddSingleton<IBootstrap<TContainer>, TBootstrap>();
 
         return services;

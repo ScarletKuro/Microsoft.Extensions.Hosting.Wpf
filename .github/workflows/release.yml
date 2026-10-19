@@ -6,13 +6,9 @@ on:
       - '*'
 
 jobs:
-  publish:
-    name: Publish release packages
+  validate:
+    name: Validate release tag
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
     steps:
       - name: Validate release tag
         shell: pwsh
@@ -21,6 +17,20 @@ jobs:
             Write-Error "Tag ${env:GITHUB_REF_NAME} is not a release tag in X.Y.Z form."
           }
 
+  # Nothing is published unless the full test matrix passes on the tagged commit.
+  test:
+    needs: validate
+    uses: ./.github/workflows/test.yml
+
+  publish:
+    name: Publish release packages
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:

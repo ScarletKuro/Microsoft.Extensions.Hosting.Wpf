@@ -5,6 +5,7 @@
     <Project Path="../src/Microsoft.Extensions.Hosting.Wpf.TrayIcon/Microsoft.Extensions.Hosting.Wpf.TrayIcon.csproj" />
     <Project Path="../src/Microsoft.Extensions.Hosting.Wpf/Microsoft.Extensions.Hosting.Wpf.csproj" />
   </Folder>
+  <Project Path="HostingMinimal/HostingMinimal.csproj" />
   <Project Path="HostingReactiveUI/HostingReactiveUI.csproj" />
   <Project Path="HostingReactiveUISimpleInjector/HostingReactiveUISimpleInjector.csproj" />
   <Project Path="HostingReactiveUISimpleInjectorAmbientScope/HostingReactiveUISimpleInjectorAmbientScope.csproj" />
