@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Internal;
@@ -20,7 +23,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 /// </remarks>
 /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
 internal sealed class WpfThread<TApplication>
-    : IWpfThread<TApplication>, IDisposable where TApplication : Application, IApplicationInitializeComponent
+    : IWpfThread<TApplication>, IUiThreadPoster, IDisposable where TApplication : Application, IApplicationInitializeComponent
 {
     // Used if HostOptions are not registered; matches the HostOptions.ShutdownTimeout default.
     private const int DefaultStopTimeoutSeconds = 30;
@@ -30,8 +33,12 @@ internal sealed class WpfThread<TApplication>
     private readonly TimeSpan _stopTimeout;
 
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger _logger;
     // Guards _disposed, _stopRequested and IsRunning together, so a stopped thread can never start Application.Run().
+    // Also guards _pendingPosts.
     private readonly object _stateLock = new();
+    // Work posted (see Post) before the application exists, forwarded to the UI thread once it does; null from then on.
+    private List<(SendOrPostCallback Callback, object? State)>? _pendingPosts = [];
     private volatile bool _disposed;
     private volatile bool _stopRequested;
     private readonly WpfContext<TApplication> _wpfContext;
@@ -71,6 +78,7 @@ internal sealed class WpfThread<TApplication>
     public WpfThread(IServiceProvider serviceProvider, WpfContext<TApplication> wpfContext)
     {
         _serviceProvider = serviceProvider;
+        _logger = serviceProvider.GetService<ILogger<WpfThread<TApplication>>>() ?? (ILogger)NullLogger.Instance;
         _stopTimeout = serviceProvider.GetService<IOptions<HostOptions>>()?.Value.ShutdownTimeout ?? TimeSpan.FromSeconds(DefaultStopTimeoutSeconds);
         _wpfContext = wpfContext;
         //Create a thread which runs the UI
@@ -89,6 +97,43 @@ internal sealed class WpfThread<TApplication>
     internal void Start()
     {
         MainThread.Start();
+    }
+
+    /// <summary>
+    /// Posts to the UI thread. Before the application exists (WPF starts after every hosted service has started, so e.g. a
+    /// request a server accepts during startup can get here first), the work is queued and runs once WPF has started.
+    /// Unlike <see cref="SynchronizationContext"/>, this never throws: JoinableTaskFactory terminates the process
+    /// (Environment.FailFast) when posting to the UI thread throws.
+    /// </summary>
+    void IUiThreadPoster.Post(SendOrPostCallback callback, object? state)
+    {
+        SynchronizationContext? context = null;
+        var firstQueued = false;
+        lock (_stateLock)
+        {
+            if (_pendingPosts is { } pendingPosts)
+            {
+                firstQueued = pendingPosts.Count == 0;
+                pendingPosts.Add((callback, state));
+            }
+            else
+            {
+                context = _synchronizationContext;
+            }
+        }
+
+        if (context is null)
+        {
+            if (firstQueued)
+            {
+                _logger.WpfPostQueued();
+            }
+
+            return;
+        }
+
+        // Ignored, without throwing, once the UI thread has ended.
+        context.Post(callback, state);
     }
 
     /// <inheritdoc />
@@ -157,6 +202,28 @@ internal sealed class WpfThread<TApplication>
 
         _disposed = true;
         StopAndWait();
+        // The UI thread was never started (host startup failed before WPF, or was never attempted).
+        DropPendingPosts();
+    }
+
+    /// <summary>
+    /// Work posted before the application existed that can no longer run: the application was not created or not started.
+    /// Whoever awaited it (e.g. JoinableTaskFactory.SwitchToMainThreadAsync) keeps waiting, which is still better than a
+    /// process terminated without a trace.
+    /// </summary>
+    private void DropPendingPosts()
+    {
+        int count;
+        lock (_stateLock)
+        {
+            count = _pendingPosts?.Count ?? 0;
+            _pendingPosts = null;
+        }
+
+        if (count > 0)
+        {
+            _logger.WpfQueuedPostsDropped(count);
+        }
     }
 
     /// <summary>
@@ -170,6 +237,8 @@ internal sealed class WpfThread<TApplication>
         }
         finally
         {
+            // Creating the application failed before the queued work could be forwarded.
+            DropPendingPosts();
             // Startup did not complete (e.g. the application shut itself down in OnStartup): nothing left to wait for.
             _started.TrySetResult(true);
             _completed.TrySetResult(true);
@@ -308,6 +377,20 @@ internal sealed class WpfThread<TApplication>
         {
             // Not expected with WPF's Application: fail loudly instead of reporting startup at a wrong time.
             throw new InvalidOperationException($"Could not identify the startup operation of {typeof(TApplication).Name}.");
+        }
+
+        // Forward the work posted before the application existed. Queued behind the application's startup, it runs once startup
+        // has begun, like work posted during startup (also inside a nested dispatcher loop in OnStartup, e.g. ShowDialog()).
+        List<(SendOrPostCallback Callback, object? State)>? pendingPosts;
+        lock (_stateLock)
+        {
+            pendingPosts = _pendingPosts;
+            _pendingPosts = null;
+        }
+
+        foreach (var (callback, state) in pendingPosts ?? [])
+        {
+            synchronizationContext.Post(callback, state);
         }
 
         // Register to the WPF application exit to stop the host application, whatever host lifetime is used.

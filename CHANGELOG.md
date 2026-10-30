@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- `AddThreadSwitching`: switching to the UI thread (`JoinableTaskFactory.SwitchToMainThreadAsync`) before the WPF application exists terminated the process with `Environment.FailFast` ("Failed to schedule time on the UI thread"), without running exception handlers or flushing logs. This happens, for example, when a socket server accepts a request while the host is still starting, since WPF starts after every hosted service's `StartAsync`. The switch now waits until WPF has started, and a warning is logged. If WPF never starts, the queued work is dropped, with a warning.
+
 ## [5.0.0] - 2026-10-19
 
 ### Migrating from 4.x

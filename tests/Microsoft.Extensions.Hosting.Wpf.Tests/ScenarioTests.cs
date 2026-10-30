@@ -98,6 +98,11 @@ public class ScenarioTests
 
         // AddThreadSwitching: the JoinableTaskFactory injected before the UI thread existed switched onto it (checked above).
         result.AssertInfo("JoinableTaskFactoryResolvedBeforeUiThread", "True");
+        // A switch requested before the WPF application existed (in a hosted service's StartAsync) waited for WPF, then ran
+        // on the UI thread once its startup had begun.
+        result.AssertInfo("WpfMissingAtEarlySwitch", "True");
+        result.Assert(result.Event("EarlySwitchRan").Thread == uiThread, "The early switch to the UI thread did not run on the UI thread.");
+        result.Assert(result.IndexOf("EarlySwitchRan") > result.IndexOf("Startup"), "Work posted before the application existed ran before its startup.");
 
         // The host started only once the application was initialized, and stopped.
         result.Assert(result.IndexOf("HostStarted") > result.IndexOf("TrayInitialize"), "ApplicationStarted was raised before the application was initialized.");
@@ -170,6 +175,8 @@ public class ScenarioTests
         {
             case FailureKind.ApplicationFactory:
                 result.Assert(result.Events.All(e => e.Name != "Constructor"), "The application was created although its factory failed.");
+                // The switch requested before WPF existed never runs, and the process still ends normally (exit code above).
+                result.Assert(result.Events.All(e => e.Name != "EarlySwitchRan"), "Work posted to the UI thread ran although the application was never created.");
                 break;
             case FailureKind.ApplicationStartup:
                 // OnStartup threw inside Application.Run(): host startup fails with that exception (checked above) instead of
@@ -183,6 +190,8 @@ public class ScenarioTests
                 // and no application code can run while the host is disposed.
                 result.Event("FailingHostedServiceStarting");
                 result.Assert(result.Events.All(e => e.Name != "Constructor"), "The application was created although a hosted service failed to start.");
+                // The switch requested before WPF existed never runs, and the process still ends normally (exit code above).
+                result.Assert(result.Events.All(e => e.Name != "EarlySwitchRan"), "Work posted to the UI thread ran although the application was never created.");
                 break;
             case FailureKind.LaterHostedServiceStarted:
                 // A hosted service failed in StartedAsync after WPF had started, so StopAsync is never called. WPF is still shut

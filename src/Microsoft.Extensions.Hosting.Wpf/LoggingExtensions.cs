@@ -33,4 +33,10 @@ internal static partial class LoggingExtensions
 
     [LoggerMessage(9, LogLevel.Information, "Content root path: {contentRoot}")]
     internal static partial void ContentRootPath(this ILogger logger, string contentRoot);
+
+    [LoggerMessage(10, LogLevel.Warning, "Work was posted to the WPF UI thread before the WPF application exists; it runs once WPF has started. WPF starts after every hosted service has started (StartAsync)")]
+    internal static partial void WpfPostQueued(this ILogger logger);
+
+    [LoggerMessage(11, LogLevel.Warning, "{count} work item(s) posted to the WPF UI thread never ran because the WPF application was not started")]
+    internal static partial void WpfQueuedPostsDropped(this ILogger logger, int count);
 }
