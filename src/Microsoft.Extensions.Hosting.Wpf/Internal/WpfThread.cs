@@ -37,9 +37,14 @@ internal sealed class WpfThread<TApplication>
     // Guards _disposed, _stopRequested and IsRunning together, so a stopped thread can never start Application.Run().
     // Also guards _pendingPosts and _applicationCreated.
     private readonly object _stateLock = new();
-    // Work posted (see Post) before the application existed, forwarded to the UI thread once it has started; null from then on.
+    // Work posted to the UI thread (see Post) goes through three phases:
+    // - before the application is created: queued in _pendingPosts;
+    // - during startup (_applicationCreated, OnStartup not returned yet): the queue is held, but new posts are forwarded directly;
+    // - once OnStartup has returned: the queue is released (FlushPendingPosts) and _pendingPosts is null.
+    // Older queued work waits while newer posts run on purpose: the queue comes from outside (e.g. a request accepted while the
+    // host was starting) and should find the application started, while a post made during startup may be what a modal dialog in
+    // OnStartup is waiting for, so holding it could deadlock startup.
     private List<(SendOrPostCallback Callback, object? State)>? _pendingPosts = [];
-    // From then on, Post forwards directly, as work posted during startup always was.
     private bool _applicationCreated;
     private volatile bool _disposed;
     private volatile bool _stopRequested;
@@ -352,8 +357,16 @@ internal sealed class WpfThread<TApplication>
             return;
         }
 
-        // Forward the work posted before the application existed, now that it has started (see Post). Like
-        // DispatcherSynchronizationContext.Post, which forwards everything posted from then on.
+        FlushPendingPosts(dispatcher);
+        _started.TrySetResult(true);
+    }
+
+    /// <summary>
+    /// Forwards the work posted before the application existed, now that it has started (see Post), the way
+    /// DispatcherSynchronizationContext.Post forwards everything posted from then on.
+    /// </summary>
+    private void FlushPendingPosts(Dispatcher dispatcher)
+    {
         List<(SendOrPostCallback Callback, object? State)>? pendingPosts;
         lock (_stateLock)
         {
@@ -365,8 +378,6 @@ internal sealed class WpfThread<TApplication>
         {
             dispatcher.BeginInvoke(DispatcherPriority.Normal, callback, state);
         }
-
-        _started.TrySetResult(true);
     }
 
     /// <summary>
