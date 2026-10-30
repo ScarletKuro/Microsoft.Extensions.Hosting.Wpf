@@ -103,8 +103,10 @@ internal sealed class WpfThread<TApplication>
 
     /// <summary>
     /// Posts to the UI thread. Before the application exists (WPF starts after every hosted service has started, so e.g. a
-    /// request a server accepts during startup can get here first), the work is queued and runs once WPF has started: after
-    /// OnStartup has returned, so it finds the application fully initialized, even if initialization pumps the dispatcher.
+    /// request a server accepts during startup can get here first), the work is queued and runs once WPF has started, i.e.
+    /// once OnStartup has returned, even when OnStartup runs a nested dispatcher loop. That is the only guarantee: if
+    /// initialization (InitializeComponent, Initialize, a component) pumps the dispatcher, WPF runs OnStartup reentrantly and
+    /// the work can run before initialization has finished, as can everything else waiting for WPF to start.
     /// Work posted once the application exists is forwarded directly, as before: OnStartup may be waiting for it in a nested
     /// dispatcher loop (e.g. ShowDialog()).
     /// Unlike <see cref="SynchronizationContext"/>, this never throws: JoinableTaskFactory terminates the process
