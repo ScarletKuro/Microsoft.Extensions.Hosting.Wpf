@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [5.0.1] - 2026-10-30
+
 ### Fixed
 - `AddThreadSwitching`: switching to the UI thread (`JoinableTaskFactory.SwitchToMainThreadAsync`) before the WPF application exists terminated the process with `Environment.FailFast` ("Failed to schedule time on the UI thread"), without running exception handlers or flushing logs. This happens, for example, when a socket server accepts a request while the host is still starting, since WPF starts after every hosted service's `StartAsync`. The switch now waits until WPF has started (`OnStartup` has returned), and a warning is logged. Pass a cancellation token to `SwitchToMainThreadAsync` to bound the wait. If WPF never starts, the queued work is dropped, with a warning.
 
@@ -161,7 +163,8 @@ Other breaking changes affect rarely used APIs and show up as compile errors; ea
 #### Added
 - First release.
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..5.0.0
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..5.0.1
+[5.0.1]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/5.0.0..5.0.1
 [5.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/4.1.1..5.0.0
 [4.1.1]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/4.1.0..4.1.1
 [4.1.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/4.0.0..4.1.0
