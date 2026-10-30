@@ -33,7 +33,7 @@ internal sealed class WpfThread<TApplication>
     private readonly TimeSpan _stopTimeout;
 
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger _logger;
+    private readonly ILogger<WpfThread<TApplication>> _logger;
     // Guards _disposed, _stopRequested and IsRunning together, so a stopped thread can never start Application.Run().
     // Also guards _pendingPosts and _applicationCreated.
     private readonly object _stateLock = new();
@@ -85,7 +85,7 @@ internal sealed class WpfThread<TApplication>
     public WpfThread(IServiceProvider serviceProvider, WpfContext<TApplication> wpfContext)
     {
         _serviceProvider = serviceProvider;
-        _logger = serviceProvider.GetService<ILogger<WpfThread<TApplication>>>() ?? (ILogger)NullLogger.Instance;
+        _logger = serviceProvider.GetService<ILogger<WpfThread<TApplication>>>() ?? NullLogger<WpfThread<TApplication>>.Instance;
         _stopTimeout = serviceProvider.GetService<IOptions<HostOptions>>()?.Value.ShutdownTimeout ?? TimeSpan.FromSeconds(DefaultStopTimeoutSeconds);
         _wpfContext = wpfContext;
         //Create a thread which runs the UI
