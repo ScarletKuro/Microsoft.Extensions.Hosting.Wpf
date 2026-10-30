@@ -37,7 +37,19 @@ public sealed class ScenarioDriver : IHostedService
         });
         _lifetime.ApplicationStopping.Register(() => _log.Event("HostStopping"));
         _lifetime.ApplicationStopped.Register(() => _log.Event("HostStopped"));
+
+        // Like a request a socket server accepts while the host is still starting: WPF does not exist yet, it starts after every
+        // hosted service's StartAsync. The switch must wait until WPF has started instead of terminating the process
+        // (JoinableTaskFactory calls Environment.FailFast when posting to the UI thread throws).
+        _log.Info("WpfMissingAtEarlySwitch", _context.WpfApplication is null);
+        _ = SwitchBeforeWpfStartedAsync();
         return Task.CompletedTask;
+    }
+
+    private async Task SwitchBeforeWpfStartedAsync()
+    {
+        await _joinableTaskFactory.SwitchToMainThreadAsync();
+        _log.Event("EarlySwitchRan");
     }
 
     // Registered after AddWpf: the host calls this after WPF's StoppingAsync, so WPF must have exited already.

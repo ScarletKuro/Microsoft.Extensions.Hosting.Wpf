@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Wpf.Core;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Wpf.Internal;
@@ -20,7 +23,7 @@ namespace Microsoft.Extensions.Hosting.Wpf.Internal;
 /// </remarks>
 /// <typeparam name="TApplication">WPF <see cref="Application" />.</typeparam>
 internal sealed class WpfThread<TApplication>
-    : IWpfThread<TApplication>, IDisposable where TApplication : Application, IApplicationInitializeComponent
+    : IWpfThread<TApplication>, IUiThreadPoster, IDisposable where TApplication : Application, IApplicationInitializeComponent
 {
     // Used if HostOptions are not registered; matches the HostOptions.ShutdownTimeout default.
     private const int DefaultStopTimeoutSeconds = 30;
@@ -30,8 +33,19 @@ internal sealed class WpfThread<TApplication>
     private readonly TimeSpan _stopTimeout;
 
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<WpfThread<TApplication>> _logger;
     // Guards _disposed, _stopRequested and IsRunning together, so a stopped thread can never start Application.Run().
+    // Also guards _pendingPosts and _applicationCreated.
     private readonly object _stateLock = new();
+    // Work posted to the UI thread (see Post) goes through three phases:
+    // - before the application is created: queued in _pendingPosts;
+    // - during startup (_applicationCreated, OnStartup not returned yet): the queue is held, but new posts are forwarded directly;
+    // - once OnStartup has returned: the queue is released (FlushPendingPosts) and _pendingPosts is null.
+    // Older queued work waits while newer posts run on purpose: the queue comes from outside (e.g. a request accepted while the
+    // host was starting) and should find the application started, while a post made during startup may be what a modal dialog in
+    // OnStartup is waiting for, so holding it could deadlock startup.
+    private List<(SendOrPostCallback Callback, object? State)>? _pendingPosts = [];
+    private bool _applicationCreated;
     private volatile bool _disposed;
     private volatile bool _stopRequested;
     private readonly WpfContext<TApplication> _wpfContext;
@@ -71,6 +85,7 @@ internal sealed class WpfThread<TApplication>
     public WpfThread(IServiceProvider serviceProvider, WpfContext<TApplication> wpfContext)
     {
         _serviceProvider = serviceProvider;
+        _logger = serviceProvider.GetService<ILogger<WpfThread<TApplication>>>() ?? NullLogger<WpfThread<TApplication>>.Instance;
         _stopTimeout = serviceProvider.GetService<IOptions<HostOptions>>()?.Value.ShutdownTimeout ?? TimeSpan.FromSeconds(DefaultStopTimeoutSeconds);
         _wpfContext = wpfContext;
         //Create a thread which runs the UI
@@ -89,6 +104,48 @@ internal sealed class WpfThread<TApplication>
     internal void Start()
     {
         MainThread.Start();
+    }
+
+    /// <summary>
+    /// Posts to the UI thread. Before the application exists (WPF starts after every hosted service has started, so e.g. a
+    /// request a server accepts during startup can get here first), the work is queued and runs once WPF has started, i.e.
+    /// once OnStartup has returned, even when OnStartup runs a nested dispatcher loop. That is the only guarantee: if
+    /// initialization (InitializeComponent, Initialize, a component) pumps the dispatcher, WPF runs OnStartup reentrantly and
+    /// the work can run before initialization has finished, as can everything else waiting for WPF to start.
+    /// Work posted once the application exists is forwarded directly, as before: OnStartup may be waiting for it in a nested
+    /// dispatcher loop (e.g. ShowDialog()).
+    /// Unlike <see cref="SynchronizationContext"/>, this never throws: JoinableTaskFactory terminates the process
+    /// (Environment.FailFast) when posting to the UI thread throws.
+    /// </summary>
+    void IUiThreadPoster.Post(SendOrPostCallback callback, object? state)
+    {
+        SynchronizationContext? context = null;
+        var firstQueued = false;
+        lock (_stateLock)
+        {
+            if (_pendingPosts is { } pendingPosts && !_applicationCreated)
+            {
+                firstQueued = pendingPosts.Count == 0;
+                pendingPosts.Add((callback, state));
+            }
+            else
+            {
+                context = _synchronizationContext;
+            }
+        }
+
+        if (context is null)
+        {
+            if (firstQueued)
+            {
+                _logger.WpfPostQueued();
+            }
+
+            return;
+        }
+
+        // Ignored, without throwing, once the UI thread has ended.
+        context.Post(callback, state);
     }
 
     /// <inheritdoc />
@@ -157,6 +214,28 @@ internal sealed class WpfThread<TApplication>
 
         _disposed = true;
         StopAndWait();
+        // The UI thread was never started (host startup failed before WPF, or was never attempted).
+        DropPendingPosts();
+    }
+
+    /// <summary>
+    /// Work posted before the application existed that can no longer run: the application was not created or not started.
+    /// Whoever awaited it (e.g. JoinableTaskFactory.SwitchToMainThreadAsync) keeps waiting, which is still better than a
+    /// process terminated without a trace.
+    /// </summary>
+    private void DropPendingPosts()
+    {
+        int count;
+        lock (_stateLock)
+        {
+            count = _pendingPosts?.Count ?? 0;
+            _pendingPosts = null;
+        }
+
+        if (count > 0)
+        {
+            _logger.WpfQueuedPostsDropped(count);
+        }
     }
 
     /// <summary>
@@ -170,6 +249,8 @@ internal sealed class WpfThread<TApplication>
         }
         finally
         {
+            // Creating the application failed before the queued work could be forwarded.
+            DropPendingPosts();
             // Startup did not complete (e.g. the application shut itself down in OnStartup): nothing left to wait for.
             _started.TrySetResult(true);
             _completed.TrySetResult(true);
@@ -253,13 +334,13 @@ internal sealed class WpfThread<TApplication>
 
         var hooks = e.Dispatcher.Hooks;
         hooks.OperationCompleted -= OnDispatcherOperationCompleted;
-        OnApplicationStarted();
+        OnApplicationStarted(e.Dispatcher);
     }
 
     /// <summary>
     /// Runs on the UI thread once the application's startup (OnStartup) has returned.
     /// </summary>
-    private void OnApplicationStarted()
+    private void OnApplicationStarted(Dispatcher dispatcher)
     {
         try
         {
@@ -276,7 +357,27 @@ internal sealed class WpfThread<TApplication>
             return;
         }
 
+        FlushPendingPosts(dispatcher);
         _started.TrySetResult(true);
+    }
+
+    /// <summary>
+    /// Forwards the work posted before the application existed, now that it has started (see Post), the way
+    /// DispatcherSynchronizationContext.Post forwards everything posted from then on.
+    /// </summary>
+    private void FlushPendingPosts(Dispatcher dispatcher)
+    {
+        List<(SendOrPostCallback Callback, object? State)>? pendingPosts;
+        lock (_stateLock)
+        {
+            pendingPosts = _pendingPosts;
+            _pendingPosts = null;
+        }
+
+        foreach (var (callback, state) in pendingPosts ?? [])
+        {
+            dispatcher.BeginInvoke(DispatcherPriority.Normal, callback, state);
+        }
     }
 
     /// <summary>
@@ -308,6 +409,11 @@ internal sealed class WpfThread<TApplication>
         {
             // Not expected with WPF's Application: fail loudly instead of reporting startup at a wrong time.
             throw new InvalidOperationException($"Could not identify the startup operation of {typeof(TApplication).Name}.");
+        }
+
+        lock (_stateLock)
+        {
+            _applicationCreated = true;
         }
 
         // Register to the WPF application exit to stop the host application, whatever host lifetime is used.

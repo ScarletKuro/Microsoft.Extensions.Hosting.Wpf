@@ -71,5 +71,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Microsoft.Extensions.Hosting.Wpf.Tests" Key="$(AssemblySignPublicKey)" />
+    <InternalsVisibleTo Include="Extensions.Hosting.Wpf.Threading" Key="$(AssemblySignPublicKey)" />
   </ItemGroup>
 </Project>

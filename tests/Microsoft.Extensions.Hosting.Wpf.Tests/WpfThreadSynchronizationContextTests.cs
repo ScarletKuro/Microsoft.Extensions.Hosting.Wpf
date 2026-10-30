@@ -25,7 +25,7 @@ public sealed class WpfThreadSynchronizationContextTests
     }
 
     [Fact]
-    public void UseBeforeTheUiThreadStartsFails()
+    public void UseBeforeTheUiThreadStartsFailsForAnotherIWpfThread()
     {
         var context = Create(new FakeWpfThread());
 
@@ -33,7 +33,36 @@ public sealed class WpfThreadSynchronizationContextTests
         Assert.Throws<InvalidOperationException>(() => context.Send(_ => { }, null));
     }
 
+    [Fact]
+    public void PostGoesThroughTheLibrarysThreadWhichQueuesUntilWpfStarts()
+    {
+        // WpfThread queues work posted before the application exists instead of throwing: JoinableTaskFactory terminates the
+        // process (Environment.FailFast) when Post throws. The end-to-end behavior is covered by ScenarioTests (EarlySwitchRan).
+        var thread = new PostingWpfThread();
+        var context = Create(thread);
+
+        context.Post(_ => { }, "posted");
+
+        Assert.Equal(new object?[] { "posted" }, thread.Posted);
+    }
+
     private static WpfThreadSynchronizationContext Create(IWpfThread thread) => new(thread);
+
+    private sealed class PostingWpfThread : IWpfThread, Internal.IUiThreadPoster
+    {
+        public List<object?> Posted { get; } = new();
+
+        public IWpfContext WpfContext => throw new NotSupportedException();
+
+        public Thread MainThread => throw new NotSupportedException();
+
+        // Not started: the context must not be used for Post.
+        public SynchronizationContext SynchronizationContext => throw new InvalidOperationException("WPF Thread was not started.");
+
+        public void HandleApplicationExit() => throw new NotSupportedException();
+
+        public void Post(SendOrPostCallback callback, object? state) => Posted.Add(state);
+    }
 
     private sealed class FakeWpfThread : IWpfThread
     {
