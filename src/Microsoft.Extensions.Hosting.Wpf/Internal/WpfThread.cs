@@ -35,10 +35,12 @@ internal sealed class WpfThread<TApplication>
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;
     // Guards _disposed, _stopRequested and IsRunning together, so a stopped thread can never start Application.Run().
-    // Also guards _pendingPosts.
+    // Also guards _pendingPosts and _applicationCreated.
     private readonly object _stateLock = new();
-    // Work posted (see Post) before the application exists, forwarded to the UI thread once it does; null from then on.
+    // Work posted (see Post) before the application existed, forwarded to the UI thread once it has started; null from then on.
     private List<(SendOrPostCallback Callback, object? State)>? _pendingPosts = [];
+    // From then on, Post forwards directly, as work posted during startup always was.
+    private bool _applicationCreated;
     private volatile bool _disposed;
     private volatile bool _stopRequested;
     private readonly WpfContext<TApplication> _wpfContext;
@@ -101,7 +103,10 @@ internal sealed class WpfThread<TApplication>
 
     /// <summary>
     /// Posts to the UI thread. Before the application exists (WPF starts after every hosted service has started, so e.g. a
-    /// request a server accepts during startup can get here first), the work is queued and runs once WPF has started.
+    /// request a server accepts during startup can get here first), the work is queued and runs once WPF has started: after
+    /// OnStartup has returned, so it finds the application fully initialized, even if initialization pumps the dispatcher.
+    /// Work posted once the application exists is forwarded directly, as before: OnStartup may be waiting for it in a nested
+    /// dispatcher loop (e.g. ShowDialog()).
     /// Unlike <see cref="SynchronizationContext"/>, this never throws: JoinableTaskFactory terminates the process
     /// (Environment.FailFast) when posting to the UI thread throws.
     /// </summary>
@@ -111,7 +116,7 @@ internal sealed class WpfThread<TApplication>
         var firstQueued = false;
         lock (_stateLock)
         {
-            if (_pendingPosts is { } pendingPosts)
+            if (_pendingPosts is { } pendingPosts && !_applicationCreated)
             {
                 firstQueued = pendingPosts.Count == 0;
                 pendingPosts.Add((callback, state));
@@ -322,13 +327,13 @@ internal sealed class WpfThread<TApplication>
 
         var hooks = e.Dispatcher.Hooks;
         hooks.OperationCompleted -= OnDispatcherOperationCompleted;
-        OnApplicationStarted();
+        OnApplicationStarted(e.Dispatcher);
     }
 
     /// <summary>
     /// Runs on the UI thread once the application's startup (OnStartup) has returned.
     /// </summary>
-    private void OnApplicationStarted()
+    private void OnApplicationStarted(Dispatcher dispatcher)
     {
         try
         {
@@ -343,6 +348,20 @@ internal sealed class WpfThread<TApplication>
             _started.TrySetCanceled();
             _wpfContext.WpfApplication?.Shutdown();
             return;
+        }
+
+        // Forward the work posted before the application existed, now that it has started (see Post). Like
+        // DispatcherSynchronizationContext.Post, which forwards everything posted from then on.
+        List<(SendOrPostCallback Callback, object? State)>? pendingPosts;
+        lock (_stateLock)
+        {
+            pendingPosts = _pendingPosts;
+            _pendingPosts = null;
+        }
+
+        foreach (var (callback, state) in pendingPosts ?? [])
+        {
+            dispatcher.BeginInvoke(DispatcherPriority.Normal, callback, state);
         }
 
         _started.TrySetResult(true);
@@ -379,18 +398,9 @@ internal sealed class WpfThread<TApplication>
             throw new InvalidOperationException($"Could not identify the startup operation of {typeof(TApplication).Name}.");
         }
 
-        // Forward the work posted before the application existed. Queued behind the application's startup, it runs once startup
-        // has begun, like work posted during startup (also inside a nested dispatcher loop in OnStartup, e.g. ShowDialog()).
-        List<(SendOrPostCallback Callback, object? State)>? pendingPosts;
         lock (_stateLock)
         {
-            pendingPosts = _pendingPosts;
-            _pendingPosts = null;
-        }
-
-        foreach (var (callback, state) in pendingPosts ?? [])
-        {
-            synchronizationContext.Post(callback, state);
+            _applicationCreated = true;
         }
 
         // Register to the WPF application exit to stop the host application, whatever host lifetime is used.

@@ -99,10 +99,11 @@ public class ScenarioTests
         // AddThreadSwitching: the JoinableTaskFactory injected before the UI thread existed switched onto it (checked above).
         result.AssertInfo("JoinableTaskFactoryResolvedBeforeUiThread", "True");
         // A switch requested before the WPF application existed (in a hosted service's StartAsync) waited for WPF, then ran
-        // on the UI thread once its startup had begun.
+        // on the UI thread once the application had fully started: after OnStartup returned, although OnStartup pumps the
+        // dispatcher in a nested loop, where work posted while the application exists does run.
         result.AssertInfo("WpfMissingAtEarlySwitch", "True");
         result.Assert(result.Event("EarlySwitchRan").Thread == uiThread, "The early switch to the UI thread did not run on the UI thread.");
-        result.Assert(result.IndexOf("EarlySwitchRan") > result.IndexOf("Startup"), "Work posted before the application existed ran before its startup.");
+        result.Assert(result.IndexOf("EarlySwitchRan") > result.IndexOf("StartupReturned"), "Work posted before the application existed ran before the application had started.");
 
         // The host started only once the application was initialized, and stopped.
         result.Assert(result.IndexOf("HostStarted") > result.IndexOf("TrayInitialize"), "ApplicationStarted was raised before the application was initialized.");
