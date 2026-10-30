@@ -71,7 +71,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Microsoft.Extensions.Hosting.Wpf.Tests" Key="$(AssemblySignPublicKey)" />
-    <!-- IUiThreadPoster: posting to the UI thread before WPF has started. -->
     <InternalsVisibleTo Include="Extensions.Hosting.Wpf.Threading" Key="$(AssemblySignPublicKey)" />
   </ItemGroup>
 </Project>
