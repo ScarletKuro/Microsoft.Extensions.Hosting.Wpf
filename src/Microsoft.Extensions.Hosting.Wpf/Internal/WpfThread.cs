@@ -260,7 +260,38 @@ internal sealed class WpfThread<TApplication>
     private void RunUiThread()
     {
         // Disposed when the UI thread ends, also if a later component fails to initialize.
-        using var wpfComponents = new DisposableList<IWpfComponent>();
+#pragma warning disable CA2000 // Disposed in the finally below, which logs the failures instead of rethrowing them.
+        var wpfComponents = new DisposableList<IWpfComponent>();
+#pragma warning restore CA2000
+        try
+        {
+            RunUiThread(wpfComponents);
+        }
+        finally
+        {
+            DisposeWpfComponents(wpfComponents);
+        }
+    }
+
+    private void DisposeWpfComponents(DisposableList<IWpfComponent> wpfComponents)
+    {
+        try
+        {
+            wpfComponents.Dispose();
+        }
+        catch (AggregateException exception)
+        {
+            // Every component was still disposed. Logged instead of rethrown: escaping this background thread would kill the
+            // process without a trace, and the host must still see the UI thread end.
+            foreach (var inner in exception.InnerExceptions)
+            {
+                _logger.WpfComponentDisposeFailed(inner);
+            }
+        }
+    }
+
+    private void RunUiThread(DisposableList<IWpfComponent> wpfComponents)
+    {
 #pragma warning disable CA1031 // The exception is not swallowed: it is rethrown on the host thread by WpfHostedService.StartedAsync via Started.
         try
         {

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+using System;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Wpf;
 
@@ -39,4 +40,7 @@ internal static partial class LoggingExtensions
 
     [LoggerMessage(11, LogLevel.Warning, "{count} work item(s) posted to the WPF UI thread never ran because the WPF application was not started")]
     internal static partial void WpfQueuedPostsDropped(this ILogger logger, int count);
+
+    [LoggerMessage(12, LogLevel.Error, "A WPF component threw while being disposed; the other components were still disposed")]
+    internal static partial void WpfComponentDisposeFailed(this ILogger logger, Exception exception);
 }

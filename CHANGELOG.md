@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [5.0.2] - 2026-11-02
+
+### Fixed
+- When a WPF component (`IWpfComponent`, e.g. a tray icon) threw from `Dispose`, the components registered before it were never disposed, and the exception escaped the UI thread and terminated the process without being logged. Every component is now disposed (in reverse order) and each failure is logged as an error.
+
 ## [5.0.1] - 2026-10-30
 
 ### Fixed
@@ -163,7 +168,8 @@ Other breaking changes affect rarely used APIs and show up as compile errors; ea
 #### Added
 - First release.
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..5.0.1
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..5.0.2
+[5.0.2]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/5.0.1..5.0.2
 [5.0.1]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/5.0.0..5.0.1
 [5.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/4.1.1..5.0.0
 [4.1.1]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/4.1.0..4.1.1
