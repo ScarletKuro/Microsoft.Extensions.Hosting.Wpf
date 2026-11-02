@@ -11,6 +11,9 @@ public sealed class ScenarioLog
 
     private readonly object _lock = new();
 
+    /// <summary>Started when the driver ends the application.</summary>
+    public System.Diagnostics.Stopwatch? StopRequested { get; set; }
+
     /// <summary>Records a lifecycle event and the thread it happened on.</summary>
     public void Event(string name, object? value = null) =>
         Write($"{Prefix}EVENT|{name}|{Environment.CurrentManagedThreadId}|{value}");

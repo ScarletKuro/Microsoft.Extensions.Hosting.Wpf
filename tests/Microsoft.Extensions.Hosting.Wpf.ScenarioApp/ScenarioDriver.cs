@@ -82,6 +82,7 @@ public sealed class ScenarioDriver : IHostedService
             await TaskScheduler.Default;
 
             _log.Event("Stopping", _scenario.Stop);
+            _log.StopRequested = System.Diagnostics.Stopwatch.StartNew();
             switch (_scenario.Stop)
             {
                 case StopKind.WpfExit:

@@ -14,6 +14,9 @@ namespace Microsoft.Extensions.Hosting.Wpf.ScenarioApp;
 /// </summary>
 public static class Program
 {
+    /// <summary>Set by Main before running the host: the UI thread must not see it.</summary>
+    public static AsyncLocal<string?> HostStartAmbient { get; } = new();
+
     public static void Main(string[] args)
     {
         var scenario = Scenario.Parse(args);
@@ -28,6 +31,7 @@ public static class Program
 
         try
         {
+            HostStartAmbient.Value = "host-start";
             // Blocks until the host stops, then disposes it.
             if (scenario.Failure == FailureKind.CanceledDuringInitialization)
             {
@@ -42,6 +46,11 @@ public static class Program
         {
             log.Info("RunFailed", $"{exception.GetType().Name}: {exception.Message}");
             Environment.ExitCode = Scenario.HostFailedExitCode;
+        }
+
+        if (log.StopRequested is { } stopRequested)
+        {
+            log.Info("StopSeconds", stopRequested.Elapsed.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture));
         }
 
         // Recorded immediately: disposing the host must already have waited for the UI thread. No UI thread may outlive the host.
@@ -178,6 +187,11 @@ public static class Program
         else
         {
             services.AddThreadSwitching();
+        }
+
+        if (scenario.Failure == FailureKind.ExitOutlivesShutdownTimeout)
+        {
+            services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(2));
         }
 
         services.AddHostedService<ScenarioDriver>();

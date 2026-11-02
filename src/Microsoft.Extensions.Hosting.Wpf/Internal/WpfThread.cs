@@ -48,6 +48,9 @@ internal sealed class WpfThread<TApplication>
     private bool _applicationCreated;
     private volatile bool _disposed;
     private volatile bool _stopRequested;
+
+    // Set when the host's stop already waited its whole shutdown timeout for the UI thread to end.
+    private volatile bool _stopTimedOut;
     private readonly WpfContext<TApplication> _wpfContext;
     private Action<WpfContext<TApplication>>? _preContextInitialization;
     private bool _initializationLocked;
@@ -101,9 +104,16 @@ internal sealed class WpfThread<TApplication>
     /// <summary>
     /// Starts the UI thread. Called by WpfHostedService.StartedAsync at the right point of the host lifecycle; not public API.
     /// </summary>
+    /// <remarks>
+    /// Without the starting thread's ExecutionContext: AsyncLocal values, logging scopes and Activity.Current of whoever started
+    /// the host would otherwise leak into every UI callback for the application's whole lifetime.
+    /// </remarks>
     internal void Start()
     {
-        MainThread.Start();
+        using (ExecutionContext.SuppressFlow())
+        {
+            MainThread.Start();
+        }
     }
 
     /// <summary>
@@ -194,16 +204,22 @@ internal sealed class WpfThread<TApplication>
             _ = dispatcher.InvokeAsync(() => application.Shutdown());
         }
 
-        if (MainThread.IsAlive && Thread.CurrentThread != MainThread)
+        // Not when the host's stop already waited the shutdown timeout for it, so the host never waits for it longer than that.
+        if (MainThread.IsAlive && Thread.CurrentThread != MainThread && !_stopTimedOut)
         {
             MainThread.Join(_stopTimeout);
         }
     }
 
     /// <summary>
+    /// Called when the host's stop gave up waiting for the UI thread (its shutdown timeout elapsed).
+    /// </summary>
+    internal void OnStopTimedOut() => _stopTimedOut = true;
+
+    /// <summary>
     /// Called by the DI container when the host (its service provider) is disposed; explicit so only the container calls it.
     /// Normally the UI thread has already ended: StoppingAsync waits for it, and <see cref="WpfStartupGuard{TApplication}"/> stops it
-    /// if the host never finished starting. This is the last resort: no UI thread may outlive the host.
+    /// if the host never finished starting. This is the last resort, bounded by the shutdown timeout like the rest.
     /// </summary>
     void IDisposable.Dispose()
     {
