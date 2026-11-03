@@ -96,6 +96,7 @@ public sealed class ScenarioApplication : Application, IApplicationInitializeCom
     {
         base.OnStartup(e);
         _log.Event("Startup");
+        _log.Info("UiThreadAmbient", Program.HostStartAmbient.Value);
 
         // A nested dispatcher loop inside OnStartup, like ShowDialog() for a login dialog: everything queued at a higher
         // priority than ApplicationIdle runs here, while OnStartup has not returned yet.
@@ -133,6 +134,11 @@ public sealed class ScenarioApplication : Application, IApplicationInitializeCom
         _log.Event("Exit", e.ApplicationExitCode);
         _resource.Use("OnExit");
         _lateResource?.Use("OnExit");
+        if (_scenario.Failure == FailureKind.ExitOutlivesShutdownTimeout)
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(6));
+        }
+
         base.OnExit(e);
     }
 }

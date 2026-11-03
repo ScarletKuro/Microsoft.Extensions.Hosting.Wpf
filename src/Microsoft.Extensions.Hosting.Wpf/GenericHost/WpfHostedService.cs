@@ -119,7 +119,8 @@ internal sealed class WpfHostedService<TApplication>
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // The host's shutdown timeout elapsed; disposing the host still stops and waits for the UI thread (WpfThread.Dispose).
+            // The host's shutdown timeout elapsed: the host goes on stopping without waiting for the UI thread any longer.
+            _wpfThread.OnStopTimedOut();
         }
     }
 

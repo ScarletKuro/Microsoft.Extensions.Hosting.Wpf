@@ -64,6 +64,8 @@ public class ScenarioTests
         result.AssertNoInfo("DriverFailed");
         result.AssertNoInfo("ApplicationMissingAtHostStarted");
         result.AssertInfo("Lifetime", lifetime == LifetimeKind.Wpf ? "WpfLifetime" : "ConsoleLifetime");
+        // The UI thread doesn't inherit the ExecutionContext of whoever started the host.
+        result.AssertInfo("UiThreadAmbient", "");
 
         // Everything WPF happens on the UI thread, exactly in this order and exactly once.
         var expectedUiEvents = new List<string> { "Constructor", "InitializeComponent" };
@@ -212,6 +214,20 @@ public class ScenarioTests
                 result.Assert(result.Event("BlockingComponentDispose").Thread == uiThread, "The initialized components were not disposed on the UI thread.");
                 break;
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllHosts))]
+    public async Task CleanupOutlivingTheShutdownTimeoutIsWaitedForOnlyOnce(BuilderKind builder, LifetimeKind lifetime)
+    {
+        var result = await RunAsync(new Scenario(builder, lifetime, InitializationKind.None, StopKind.HostStop, FailureKind.ExitOutlivesShutdownTimeout));
+
+        // OnExit takes 6 s, the shutdown timeout is 2 s: StoppingAsync gives up after it, and disposing the host must not
+        // wait another 2 s for the same UI thread.
+        result.AssertInfo("Completed", "True");
+        result.Event("Exit");
+        var seconds = double.Parse(result.Info("StopSeconds"), System.Globalization.CultureInfo.InvariantCulture);
+        result.Assert(seconds < 3.5, $"Stopping took {seconds} s, expected about the shutdown timeout (2 s).");
     }
 
     public static TheoryData<BuilderKind, LifetimeKind, FailureKind> AllCustomFactoryScenarios()

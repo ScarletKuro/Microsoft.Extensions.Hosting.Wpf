@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [5.0.3] - 2026-11-03
+
+### Fixed
+- The WPF UI thread inherited the `ExecutionContext` of whoever started the host: `AsyncLocal` values, logging scopes and `Activity.Current` set around `host.Run()` leaked into every UI callback for the application's whole lifetime. The UI thread now starts without them.
+- When application cleanup (`OnExit`, component disposal) outlived `HostOptions.ShutdownTimeout`, the host waited for the UI thread twice: once while stopping and again while being disposed. It now waits at most once.
+
 ## [5.0.2] - 2026-11-02
 
 ### Fixed
@@ -168,7 +174,8 @@ Other breaking changes affect rarely used APIs and show up as compile errors; ea
 #### Added
 - First release.
 
-[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..5.0.2
+[Unreleased]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/HEAD..5.0.3
+[5.0.3]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/5.0.2..5.0.3
 [5.0.2]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/5.0.1..5.0.2
 [5.0.1]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/5.0.0..5.0.1
 [5.0.0]: https://github.com/ScarletKuro/Microsoft.Extensions.Hosting.Wpf/compare/4.1.1..5.0.0

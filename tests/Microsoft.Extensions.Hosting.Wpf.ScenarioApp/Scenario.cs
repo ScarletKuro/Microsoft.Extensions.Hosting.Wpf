@@ -54,6 +54,8 @@ public enum FailureKind
     ApplicationStartup,
     /// <summary>Startup is cancelled while the UI thread is still initializing; the host is disposed before initialization ends.</summary>
     CanceledDuringInitialization,
+    /// <summary>Not a startup failure: <c>OnExit</c> outlives the host's shutdown timeout.</summary>
+    ExitOutlivesShutdownTimeout,
 }
 
 /// <summary>What ends the application once it runs.</summary>
